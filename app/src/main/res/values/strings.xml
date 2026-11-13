@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reloj</string>
+    <string name="widget_label">Temporizadores</string>
+    <string name="widget_description">Temporizadores guardados y cuenta regresiva en vivo</string>
+    <string name="widget_open_app">Abrir</string>
+    <string name="timer_channel_name">Temporizadores</string>
+    <string name="timer_finished">Temporizador finalizado</string>
+    <string name="alarm_channel_name">Alarmas</string>
+    <string name="alarm_ringing">Alarma</string>
+</resources>
