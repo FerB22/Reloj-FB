@@ -1,6 +1,14 @@
 package com.reloj.app.core.designsystem
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -36,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,8 +56,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.reloj.app.R
+import kotlinx.coroutines.delay
 
 @Composable
 fun PrimaryPillButton(
@@ -301,6 +312,92 @@ private fun StepperButton(text: String, onClick: () -> Unit) {
                 style = AppTypography.title,
                 color = colors.textPrimary,
             )
+        }
+    }
+}
+
+/**
+ * Botón de papelera con confirmación animada en línea: el primer toque despliega
+ * la píldora roja de confirmación junto al icono y se cancela automáticamente tras 3 s.
+ */
+@Composable
+fun ConfirmDeleteButton(
+    confirming: Boolean,
+    onRequestConfirm: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancelConfirm: () -> Unit,
+    contentDescription: String,
+    buttonSize: Dp = 40.dp,
+    modifier: Modifier = Modifier,
+) {
+    val colors = AppTheme.colors
+    val view = LocalView.current
+
+    LaunchedEffect(confirming) {
+        if (confirming) {
+            delay(3_000L)
+            onCancelConfirm()
+        }
+    }
+
+    val containerColor by animateColorAsState(
+        targetValue = if (confirming) colors.danger else colors.surfaceElevated,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "deleteContainerColor",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (confirming) {
+            if (colors.isDark) Color(0xFF1A1012) else Color.White
+        } else {
+            colors.textSecondary
+        },
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "deleteContentColor",
+    )
+
+    Surface(
+        modifier = modifier
+            .height(buttonSize)
+            .clip(CircleShape)
+            .clickable {
+                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                if (confirming) onConfirm() else onRequestConfirm()
+            },
+        shape = CircleShape,
+        color = containerColor,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AnimatedVisibility(
+                visible = confirming,
+                enter = expandHorizontally(
+                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                    expandFrom = Alignment.End,
+                ) + fadeIn(animationSpec = tween(durationMillis = 180)),
+                exit = shrinkHorizontally(
+                    animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                    shrinkTowards = Alignment.End,
+                ) + fadeOut(animationSpec = tween(durationMillis = 150)),
+            ) {
+                Text(
+                    text = "Confirmar",
+                    style = AppTypography.label,
+                    color = contentColor,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 14.dp, end = 2.dp),
+                )
+            }
+
+            Box(
+                modifier = Modifier.size(buttonSize),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete),
+                    contentDescription = if (confirming) "Confirmar eliminación" else contentDescription,
+                    tint = contentColor,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }

@@ -1,5 +1,10 @@
 package com.reloj.app.feature.timer
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +55,7 @@ import com.reloj.app.core.data.local.TimerState
 import com.reloj.app.core.data.repository.TimerRepository
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
+import com.reloj.app.core.designsystem.ConfirmDeleteButton
 import com.reloj.app.core.designsystem.EmptyStateCard
 import com.reloj.app.core.designsystem.NumberStepper
 import com.reloj.app.core.designsystem.PrimaryPillButton
@@ -358,11 +364,17 @@ private fun TimerCard(
                     color = if (isFinished) colors.accent else colors.textPrimary,
                 )
 
+                var confirmingDelete by remember(timer.id) { mutableStateOf(false) }
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isRunning || timer.state == TimerState.PAUSED) {
+                    AnimatedVisibility(
+                        visible = !confirmingDelete && (isRunning || timer.state == TimerState.PAUSED),
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut(),
+                    ) {
                         Surface(
                             modifier = Modifier
                                 .height(42.dp)
@@ -385,7 +397,11 @@ private fun TimerCard(
                         }
                     }
 
-                    if (timer.state != TimerState.IDLE) {
+                    AnimatedVisibility(
+                        visible = !confirmingDelete && timer.state != TimerState.IDLE,
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut(),
+                    ) {
                         SmallIconButton(
                             iconRes = R.drawable.ic_reset,
                             contentDescription = "Reiniciar",
@@ -395,12 +411,16 @@ private fun TimerCard(
                         )
                     }
 
-                    SmallIconButton(
-                        iconRes = R.drawable.ic_delete,
+                    ConfirmDeleteButton(
+                        confirming = confirmingDelete,
+                        onRequestConfirm = { confirmingDelete = true },
+                        onConfirm = {
+                            confirmingDelete = false
+                            onDelete()
+                        },
+                        onCancelConfirm = { confirmingDelete = false },
                         contentDescription = "Eliminar",
-                        containerColor = colors.surfaceElevated,
-                        iconColor = colors.textSecondary,
-                        onClick = onDelete,
+                        buttonSize = 42.dp,
                     )
 
                     if (!isFinished) {

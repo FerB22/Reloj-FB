@@ -53,6 +53,7 @@ import com.reloj.app.core.data.local.CustomSoundManager
 import com.reloj.app.core.data.repository.AlarmRepository
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
+import com.reloj.app.core.designsystem.ConfirmDeleteButton
 import com.reloj.app.core.designsystem.EmptyStateCard
 import com.reloj.app.core.designsystem.NumberStepper
 import com.reloj.app.core.designsystem.PrimaryPillButton
@@ -312,23 +313,18 @@ private fun AlarmCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onDelete),
-                    shape = CircleShape,
-                    color = colors.surfaceElevated,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_delete),
-                            contentDescription = "Eliminar alarma",
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
+                var confirmingDelete by remember(alarm.id) { mutableStateOf(false) }
+                ConfirmDeleteButton(
+                    confirming = confirmingDelete,
+                    onRequestConfirm = { confirmingDelete = true },
+                    onConfirm = {
+                        confirmingDelete = false
+                        onDelete()
+                    },
+                    onCancelConfirm = { confirmingDelete = false },
+                    contentDescription = "Eliminar alarma",
+                    buttonSize = 38.dp,
+                )
 
                 Switch(
                     checked = alarm.enabled,
