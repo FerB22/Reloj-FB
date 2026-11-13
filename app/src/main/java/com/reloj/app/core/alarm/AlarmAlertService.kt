@@ -22,6 +22,7 @@ import com.reloj.app.core.data.local.AlarmSoundPreset
 import com.reloj.app.core.data.local.SoundPreferences
 import com.reloj.app.core.data.local.SoundPreviewPlayer
 import com.reloj.app.core.data.local.TimerSoundPreset
+import com.reloj.app.core.data.local.isSilentSoundPreset
 import com.reloj.app.core.data.repository.TimerRepository
 import com.reloj.app.feature.widget.TimerWidget
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +43,7 @@ data class ActiveAlertState(
     val title: String,
     val subtitle: String,
     val soundLabel: String,
+    val isSilent: Boolean = false,
 )
 
 class AlarmAlertService : Service() {
@@ -104,6 +106,7 @@ class AlarmAlertService : Service() {
                     title = title,
                     subtitle = subtitle,
                     soundLabel = resolved.displayLabel,
+                    isSilent = resolved.isSilent,
                 )
 
                 val useFullScreen = shouldLaunchFullScreen()
@@ -199,10 +202,12 @@ class AlarmAlertService : Service() {
         }
 
         val soundSettings = SoundPreferences.get(this).settings.value
-        val useGradual = state.isAlarm && soundSettings.gradualVolume
-        startMediaPlayer(source, useGradual)
+        if (!source.isSilent) {
+            val useGradual = state.isAlarm && soundSettings.gradualVolume
+            startMediaPlayer(source, useGradual)
+        }
 
-        if (soundSettings.vibrateEnabled) {
+        if (source.isSilent || soundSettings.vibrateEnabled) {
             startVibration(state.isAlarm)
         }
 
@@ -360,6 +365,7 @@ class AlarmAlertService : Service() {
         val filePath: String?,
         val fallbackRawRes: Int,
         val displayLabel: String,
+        val isSilent: Boolean = false,
     )
 
     private fun resolveAudioSource(
@@ -370,6 +376,15 @@ class AlarmAlertService : Service() {
     ): ResolvedAudio {
         val prefs = SoundPreferences.get(this).settings.value
         val defaultRaw = if (isAlarm) prefs.alarmSound.rawResId else prefs.timerSound.rawResId
+
+        if (isSilentSoundPreset(itemPreset)) {
+            return ResolvedAudio(
+                filePath = null,
+                fallbackRawRes = defaultRaw,
+                displayLabel = "Solo vibración",
+                isSilent = true,
+            )
+        }
 
         // 1. Audio externo específico de esta alarma o temporizador
         if (!itemCustomPath.isNullOrBlank() && File(itemCustomPath).exists()) {

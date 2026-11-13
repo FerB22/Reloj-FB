@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -365,6 +366,7 @@ fun ConfirmDeleteButton(
             },
         shape = CircleShape,
         color = containerColor,
+        shadowElevation = if (confirming) 4.dp else 0.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AnimatedVisibility(
@@ -383,7 +385,7 @@ fun ConfirmDeleteButton(
                     style = AppTypography.label,
                     color = contentColor,
                     maxLines = 1,
-                    modifier = Modifier.padding(start = 14.dp, end = 2.dp),
+                    modifier = Modifier.padding(start = 12.dp, end = 0.dp),
                 )
             }
 
@@ -398,6 +400,71 @@ fun ConfirmDeleteButton(
                     modifier = Modifier.size(18.dp),
                 )
             }
+        }
+    }
+}
+
+/**
+ * Fila que reserva un ancho fijo para la acción destructiva en reposo y permite
+ * que su píldora de confirmación se expanda sobrepuesta sin reajustar ni mover el texto izquierdo.
+ */
+@Composable
+fun StableActionRow(
+    reservedDeleteWidth: Dp,
+    modifier: Modifier = Modifier,
+    spacing: Dp = 10.dp,
+    leftContent: @Composable () -> Unit,
+    deleteAction: @Composable () -> Unit,
+    trailingAction: @Composable () -> Unit,
+) {
+    Layout(
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Box { leftContent() }
+            Box { trailingAction() }
+            Box { deleteAction() }
+        },
+    ) { measurables, constraints ->
+        val gapPx = spacing.roundToPx()
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val trailingPlaceable = measurables[1].measure(loose)
+        val hasTrailing = trailingPlaceable.width > 0
+        val trailingGap = if (hasTrailing) gapPx else 0
+
+        val deleteMaxWidth = (constraints.maxWidth - trailingPlaceable.width - trailingGap).coerceAtLeast(0)
+        val deletePlaceable = measurables[2].measure(
+            loose.copy(maxWidth = deleteMaxWidth),
+        )
+
+        val reservedDeletePx = reservedDeleteWidth.roundToPx()
+        val leftMaxWidth = (
+            constraints.maxWidth - trailingPlaceable.width - trailingGap - reservedDeletePx - gapPx
+            ).coerceAtLeast(0)
+        val leftPlaceable = measurables[0].measure(
+            loose.copy(maxWidth = leftMaxWidth),
+        )
+
+        val rowWidth = constraints.maxWidth
+        val rowHeight = maxOf(
+            leftPlaceable.height,
+            trailingPlaceable.height,
+            deletePlaceable.height,
+        )
+
+        layout(rowWidth, rowHeight) {
+            leftPlaceable.placeRelative(
+                x = 0,
+                y = (rowHeight - leftPlaceable.height) / 2,
+            )
+            trailingPlaceable.placeRelative(
+                x = rowWidth - trailingPlaceable.width,
+                y = (rowHeight - trailingPlaceable.height) / 2,
+            )
+            deletePlaceable.placeRelative(
+                x = rowWidth - trailingPlaceable.width - trailingGap - deletePlaceable.width,
+                y = (rowHeight - deletePlaceable.height) / 2,
+                zIndex = 1f,
+            )
         }
     }
 }

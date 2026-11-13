@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+const val SILENT_SOUND_PRESET = "SILENT"
+
+fun isSilentSoundPreset(soundPreset: String?): Boolean = soundPreset == SILENT_SOUND_PRESET
+
 enum class AlarmSoundPreset(
     val label: String,
     val description: String,

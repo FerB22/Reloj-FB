@@ -50,6 +50,8 @@ import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmEntity
 import com.reloj.app.core.data.local.AlarmRepeatUtils
 import com.reloj.app.core.data.local.CustomSoundManager
+import com.reloj.app.core.data.local.SILENT_SOUND_PRESET
+import com.reloj.app.core.data.local.isSilentSoundPreset
 import com.reloj.app.core.data.repository.AlarmRepository
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
@@ -58,6 +60,7 @@ import com.reloj.app.core.designsystem.EmptyStateCard
 import com.reloj.app.core.designsystem.NumberStepper
 import com.reloj.app.core.designsystem.PrimaryPillButton
 import com.reloj.app.core.designsystem.SoundPickerSection
+import com.reloj.app.core.designsystem.StableActionRow
 import com.reloj.app.core.designsystem.resolveSoundLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -258,62 +261,70 @@ private fun AlarmCard(
             color = if (alarm.enabled) colors.accent else colors.outline,
         ),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = timeText,
-                    style = AppTypography.timerCard,
-                    color = if (alarm.enabled) colors.textPrimary else colors.textSecondary,
-                )
-                if (alarm.label.isNotBlank()) {
-                    Text(
-                        text = alarm.label,
-                        style = AppTypography.body,
-                        color = colors.textSecondary,
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+        val isSilent = isSilentSoundPreset(alarm.soundPreset)
+        var confirmingDelete by remember(alarm.id) { mutableStateOf(false) }
+
+        StableActionRow(
+            reservedDeleteWidth = 38.dp,
+            spacing = 8.dp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            leftContent = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
-                        text = repeatSummary,
-                        style = AppTypography.label,
-                        color = colors.textSecondary,
+                        text = timeText,
+                        style = AppTypography.timerCard,
+                        color = if (alarm.enabled) colors.textPrimary else colors.textSecondary,
                     )
-                    if (remainingText != null) {
+                    if (alarm.label.isNotBlank()) {
                         Text(
-                            text = "· $remainingText",
+                            text = alarm.label,
+                            style = AppTypography.body,
+                            color = colors.textSecondary,
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = repeatSummary,
                             style = AppTypography.label,
-                            color = colors.accent,
+                            color = colors.textSecondary,
+                        )
+                        if (remainingText != null) {
+                            Text(
+                                text = "· $remainingText",
+                                style = AppTypography.label,
+                                color = colors.accent,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                    if (isSilent) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.surfaceElevated,
+                            border = BorderStroke(1.dp, colors.outline),
+                        ) {
+                            Text(
+                                text = "Sin sonido · Solo vibración",
+                                style = AppTypography.label,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    } else if (soundLabel != null) {
+                        Text(
+                            text = "♪ $soundLabel",
+                            style = AppTypography.label,
+                            color = if (alarm.enabled) colors.accent else colors.textSecondary,
                         )
                     }
                 }
-                if (soundLabel != null) {
-                    Text(
-                        text = "♪ $soundLabel",
-                        style = AppTypography.label,
-                        color = if (alarm.enabled) colors.accent else colors.textSecondary,
-                    )
-                }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                var confirmingDelete by remember(alarm.id) { mutableStateOf(false) }
+            },
+            deleteAction = {
                 ConfirmDeleteButton(
                     confirming = confirmingDelete,
                     onRequestConfirm = { confirmingDelete = true },
@@ -325,7 +336,8 @@ private fun AlarmCard(
                     contentDescription = "Eliminar alarma",
                     buttonSize = 38.dp,
                 )
-
+            },
+            trailingAction = {
                 Switch(
                     checked = alarm.enabled,
                     onCheckedChange = onToggle,
@@ -337,8 +349,8 @@ private fun AlarmCard(
                         uncheckedBorderColor = colors.outline,
                     ),
                 )
-            }
-        }
+            },
+        )
     }
 }
 
@@ -366,6 +378,15 @@ private fun AlarmEditorDialog(
     var soundPreset by remember(initial) { mutableStateOf(initial?.soundPreset) }
     var customPath by remember(initial) { mutableStateOf(initial?.customSoundPath) }
     var customName by remember(initial) { mutableStateOf(initial?.customSoundName) }
+    var lastNonSilentPreset by remember(initial) {
+        mutableStateOf(initial?.soundPreset?.takeUnless { isSilentSoundPreset(it) })
+    }
+    var lastCustomPath by remember(initial) {
+        mutableStateOf(if (isSilentSoundPreset(initial?.soundPreset)) null else initial?.customSoundPath)
+    }
+    var lastCustomName by remember(initial) {
+        mutableStateOf(if (isSilentSoundPreset(initial?.soundPreset)) null else initial?.customSoundName)
+    }
 
     val isPm = hour >= 12
     val displayHour = if (use24HourFormat) {
@@ -581,20 +602,46 @@ private fun AlarmEditorDialog(
                     selectedPreset = soundPreset,
                     customSoundPath = customPath,
                     customSoundName = customName,
+                    allowSilentToggle = true,
+                    onToggleSoundEnabled = { enabled ->
+                        if (enabled) {
+                            soundPreset = lastNonSilentPreset
+                            customPath = lastCustomPath
+                            customName = lastCustomName
+                        } else {
+                            if (!isSilentSoundPreset(soundPreset)) {
+                                lastNonSilentPreset = soundPreset
+                                lastCustomPath = customPath
+                                lastCustomName = customName
+                            }
+                            soundPreset = SILENT_SOUND_PRESET
+                            customPath = null
+                            customName = null
+                        }
+                    },
                     onSelectDefault = {
                         soundPreset = null
                         customPath = null
                         customName = null
+                        lastNonSilentPreset = null
+                        lastCustomPath = null
+                        lastCustomName = null
                     },
                     onSelectPreset = { presetName ->
                         soundPreset = presetName
                         customPath = null
                         customName = null
+                        lastNonSilentPreset = presetName
+                        lastCustomPath = null
+                        lastCustomName = null
                     },
                     onCustomAudioImported = { path, name ->
                         soundPreset = "CUSTOM"
                         customPath = path
                         customName = name
+                        lastNonSilentPreset = "CUSTOM"
+                        lastCustomPath = path
+                        lastCustomName = name
                     },
                 )
 

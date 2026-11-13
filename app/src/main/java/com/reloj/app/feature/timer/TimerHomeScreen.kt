@@ -60,6 +60,7 @@ import com.reloj.app.core.designsystem.EmptyStateCard
 import com.reloj.app.core.designsystem.NumberStepper
 import com.reloj.app.core.designsystem.PrimaryPillButton
 import com.reloj.app.core.designsystem.SoundPickerSection
+import com.reloj.app.core.designsystem.StableActionRow
 import com.reloj.app.core.designsystem.resolveSoundLabel
 import com.reloj.app.feature.widget.TimerWidget
 import kotlinx.coroutines.delay
@@ -353,76 +354,80 @@ private fun TimerCard(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = formatMillis(displayMillis),
-                    style = AppTypography.timerCard,
-                    color = if (isFinished) colors.accent else colors.textPrimary,
-                )
+            var confirmingDelete by remember(timer.id) { mutableStateOf(false) }
 
-                var confirmingDelete by remember(timer.id) { mutableStateOf(false) }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AnimatedVisibility(
-                        visible = !confirmingDelete && (isRunning || timer.state == TimerState.PAUSED),
-                        enter = expandHorizontally() + fadeIn(),
-                        exit = shrinkHorizontally() + fadeOut(),
+            StableActionRow(
+                reservedDeleteWidth = if (timer.state == TimerState.IDLE) 42.dp else 156.dp,
+                spacing = 8.dp,
+                leftContent = {
+                    Text(
+                        text = formatMillis(displayMillis),
+                        style = AppTypography.timerCard,
+                        color = if (isFinished) colors.accent else colors.textPrimary,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                },
+                deleteAction = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .height(42.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable(onClick = onAddMinute),
-                            shape = RoundedCornerShape(14.dp),
-                            color = colors.surfaceElevated,
-                            border = BorderStroke(1.dp, colors.outline),
+                        AnimatedVisibility(
+                            visible = !confirmingDelete && (isRunning || timer.state == TimerState.PAUSED),
+                            enter = expandHorizontally() + fadeIn(),
+                            exit = shrinkHorizontally() + fadeOut(),
                         ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.Center,
+                            Surface(
+                                modifier = Modifier
+                                    .height(42.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable(onClick = onAddMinute),
+                                shape = RoundedCornerShape(14.dp),
+                                color = colors.surfaceElevated,
+                                border = BorderStroke(1.dp, colors.outline),
                             ) {
-                                Text(
-                                    text = "+1 min",
-                                    style = AppTypography.label,
-                                    color = colors.textPrimary,
-                                )
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "+1 min",
+                                        style = AppTypography.label,
+                                        color = colors.textPrimary,
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    AnimatedVisibility(
-                        visible = !confirmingDelete && timer.state != TimerState.IDLE,
-                        enter = expandHorizontally() + fadeIn(),
-                        exit = shrinkHorizontally() + fadeOut(),
-                    ) {
-                        SmallIconButton(
-                            iconRes = R.drawable.ic_reset,
-                            contentDescription = "Reiniciar",
-                            containerColor = colors.surfaceElevated,
-                            iconColor = colors.textPrimary,
-                            onClick = onReset,
+                        AnimatedVisibility(
+                            visible = !confirmingDelete && timer.state != TimerState.IDLE,
+                            enter = expandHorizontally() + fadeIn(),
+                            exit = shrinkHorizontally() + fadeOut(),
+                        ) {
+                            SmallIconButton(
+                                iconRes = R.drawable.ic_reset,
+                                contentDescription = "Reiniciar",
+                                containerColor = colors.surfaceElevated,
+                                iconColor = colors.textPrimary,
+                                onClick = onReset,
+                            )
+                        }
+
+                        ConfirmDeleteButton(
+                            confirming = confirmingDelete,
+                            onRequestConfirm = { confirmingDelete = true },
+                            onConfirm = {
+                                confirmingDelete = false
+                                onDelete()
+                            },
+                            onCancelConfirm = { confirmingDelete = false },
+                            contentDescription = "Eliminar",
+                            buttonSize = 42.dp,
                         )
                     }
-
-                    ConfirmDeleteButton(
-                        confirming = confirmingDelete,
-                        onRequestConfirm = { confirmingDelete = true },
-                        onConfirm = {
-                            confirmingDelete = false
-                            onDelete()
-                        },
-                        onCancelConfirm = { confirmingDelete = false },
-                        contentDescription = "Eliminar",
-                        buttonSize = 42.dp,
-                    )
-
+                },
+                trailingAction = {
                     if (!isFinished) {
                         SmallIconButton(
                             iconRes = if (isRunning) R.drawable.ic_pause else R.drawable.ic_play,
@@ -432,8 +437,8 @@ private fun TimerCard(
                             onClick = if (isRunning) onPause else onStart,
                         )
                     }
-                }
-            }
+                },
+            )
         }
     }
 }

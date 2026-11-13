@@ -208,11 +208,15 @@ class AlertActivity : ComponentActivity() {
 
                         Surface(
                             shape = CircleShape,
-                            color = colors.surface,
+                            color = if (active.isSilent) colors.surfaceElevated else colors.surface,
                             border = BorderStroke(1.dp, colors.outline),
                         ) {
                             Text(
-                                text = "♪ ${active.soundLabel}",
+                                text = if (active.isSilent) {
+                                    "Sin sonido · ${active.soundLabel}"
+                                } else {
+                                    "♪ ${active.soundLabel}"
+                                },
                                 style = AppTypography.label,
                                 color = colors.textSecondary,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
