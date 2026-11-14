@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Reloj" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F6F3EB</item>
+        <item name="android:colorBackground">#F6F3EB</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowSplashScreenBackground">#F6F3EB</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#F6F3EB</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+
+    <style name="Theme.Reloj.Light" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F6F3EB</item>
+        <item name="android:colorBackground">#F6F3EB</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowSplashScreenBackground">#F6F3EB</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#F6F3EB</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+
+    <style name="Theme.Reloj.Ice" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F2F5FA</item>
+        <item name="android:colorBackground">#F2F5FA</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowSplashScreenBackground">#F2F5FA</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#F2F5FA</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+
+    <style name="Theme.Reloj.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121316</item>
+        <item name="android:colorBackground">#121316</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowSplashScreenBackground">#121316</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#121316</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+
+    <style name="Theme.Reloj.Midnight" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0B1220</item>
+        <item name="android:colorBackground">#0B1220</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowSplashScreenBackground">#0B1220</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#0B1220</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+
+    <style name="Theme.Reloj.Forest" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0F1A16</item>
+        <item name="android:colorBackground">#0F1A16</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowSplashScreenBackground">#0F1A16</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#0F1A16</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+    </style>
+</resources>

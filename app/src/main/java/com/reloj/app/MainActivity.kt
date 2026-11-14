@@ -1,7 +1,9 @@
 package com.reloj.app
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
@@ -43,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -56,6 +59,7 @@ import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
 import com.reloj.app.core.designsystem.RelojTheme
 import com.reloj.app.core.designsystem.ThemeMode
+import com.reloj.app.core.designsystem.buildAppColorScheme
 import com.reloj.app.feature.alarm.AlarmScreen
 import com.reloj.app.feature.settings.SettingsScreen
 import com.reloj.app.feature.timer.TimerHomeScreen
@@ -83,27 +87,50 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations) {
+            ThemePreferences.get(applicationContext).syncSystemNightModeIfNeeded(applicationContext)
             AppIconManager.applyPendingIconIfNeeded(applicationContext)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         val themePrefs = ThemePreferences.get(this)
+        val initialAppearance = themePrefs.settings.value
+        val systemDarkAtBoot =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val initialDark = initialAppearance.themeMode.isDark(systemDarkAtBoot)
+        val initialScheme = buildAppColorScheme(
+            themeMode = initialAppearance.themeMode,
+            systemDark = systemDarkAtBoot,
+            accent = initialAppearance.accent,
+        )
+        setTheme(themeStyleFor(initialAppearance.themeMode, systemDarkAtBoot))
+
+        super.onCreate(savedInstanceState)
+        applyEdgeToEdgeBars(initialDark)
+        window.setBackgroundDrawable(ColorDrawable(initialScheme.background.toArgb()))
+
         val initialTab = parseTabExtra(intent) ?: AppTab.TIMERS
 
         setContent {
             val appearance by themePrefs.settings.collectAsState()
             val systemDark = isSystemInDarkTheme()
             val resolvedDark = appearance.themeMode.isDark(systemDark)
+            val resolvedScheme = remember(appearance.themeMode, systemDark, appearance.accent) {
+                buildAppColorScheme(
+                    themeMode = appearance.themeMode,
+                    systemDark = systemDark,
+                    accent = appearance.accent,
+                )
+            }
+            var appliedThemeKey by remember { mutableStateOf(initialDark to initialScheme.background) }
 
-            LaunchedEffect(resolvedDark) {
-                val barStyle = if (resolvedDark) {
-                    SystemBarStyle.dark(Color.TRANSPARENT)
-                } else {
-                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+            LaunchedEffect(resolvedDark, resolvedScheme.background) {
+                val targetKey = resolvedDark to resolvedScheme.background
+                if (appliedThemeKey != targetKey) {
+                    appliedThemeKey = targetKey
+                    applyEdgeToEdgeBars(resolvedDark)
+                    window.setBackgroundDrawable(ColorDrawable(resolvedScheme.background.toArgb()))
                 }
-                enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
             }
 
             RelojTheme(
@@ -242,6 +269,29 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    private fun applyEdgeToEdgeBars(isDark: Boolean) {
+        val barStyle = if (isDark) {
+            SystemBarStyle.dark(Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        }
+        enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
+    }
+
+    private fun themeStyleFor(mode: ThemeMode, systemDark: Boolean): Int {
+        val resolved = when (mode) {
+            ThemeMode.SYSTEM -> if (systemDark) ThemeMode.DARK else ThemeMode.LIGHT
+            else -> mode
+        }
+        return when (resolved) {
+            ThemeMode.DARK -> R.style.Theme_Reloj_Dark
+            ThemeMode.MIDNIGHT -> R.style.Theme_Reloj_Midnight
+            ThemeMode.FOREST -> R.style.Theme_Reloj_Forest
+            ThemeMode.ICE -> R.style.Theme_Reloj_Ice
+            ThemeMode.LIGHT, ThemeMode.SYSTEM -> R.style.Theme_Reloj_Light
         }
     }
 

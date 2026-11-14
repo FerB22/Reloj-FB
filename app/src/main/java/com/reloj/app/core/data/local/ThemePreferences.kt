@@ -1,6 +1,8 @@
 package com.reloj.app.core.data.local
 
+import android.app.UiModeManager
 import android.content.Context
+import android.os.Build
 import com.reloj.app.core.designsystem.AccentPreset
 import com.reloj.app.core.designsystem.ClockWidgetStyle
 import com.reloj.app.core.designsystem.ThemeMode
@@ -59,12 +61,27 @@ class ThemePreferences private constructor(context: Context) {
         _settings.value = _settings.value.copy(clockWidgetStyle = style)
     }
 
+    fun syncSystemNightModeIfNeeded(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val desiredNightMode = when (_settings.value.themeMode) {
+            ThemeMode.SYSTEM -> UiModeManager.MODE_NIGHT_AUTO
+            ThemeMode.LIGHT, ThemeMode.ICE -> UiModeManager.MODE_NIGHT_NO
+            ThemeMode.DARK, ThemeMode.MIDNIGHT, ThemeMode.FOREST -> UiModeManager.MODE_NIGHT_YES
+        }
+        val lastSynced = prefs.getInt(KEY_SYNCED_NIGHT_MODE, Int.MIN_VALUE)
+        if (lastSynced != desiredNightMode) {
+            context.getSystemService(UiModeManager::class.java)?.setApplicationNightMode(desiredNightMode)
+            prefs.edit().putInt(KEY_SYNCED_NIGHT_MODE, desiredNightMode).apply()
+        }
+    }
+
     companion object {
         private const val PREFS_NAME = "reloj_appearance"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_ACCENT = "accent_preset"
         private const val KEY_USE_24H = "use_24h_format"
         private const val KEY_CLOCK_WIDGET_STYLE = "clock_widget_style"
+        private const val KEY_SYNCED_NIGHT_MODE = "synced_os_night_mode"
 
         @Volatile private var instance: ThemePreferences? = null
 
