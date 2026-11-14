@@ -538,6 +538,7 @@ private fun LiveClockHeader(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Box(
                     modifier = Modifier
@@ -575,7 +576,7 @@ private fun LiveClockHeader(
                 modifier = modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.Start,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 InlineClockDigits(
                     mainTimeText = mainTimeText,
@@ -597,6 +598,7 @@ private fun LiveClockHeader(
                     text = dateText,
                     style = AppTypography.body.copy(fontFamily = FontFamily.Serif),
                     color = colors.textSecondary,
+                    textAlign = TextAlign.Center,
                 )
                 if (nextAlarmText != null) {
                     Spacer(modifier = Modifier.height(8.dp))

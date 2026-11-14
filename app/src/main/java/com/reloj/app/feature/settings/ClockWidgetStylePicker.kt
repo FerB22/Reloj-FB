@@ -293,6 +293,7 @@ private fun ClockWidgetLivePreview(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
@@ -403,6 +404,7 @@ private fun ClockWidgetLivePreview(
                             .fillMaxWidth()
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         Box(
                             modifier = Modifier
@@ -425,7 +427,7 @@ private fun ClockWidgetLivePreview(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 18.dp, vertical = 14.dp),
-                        horizontalAlignment = Alignment.Start,
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         PreviewTimeRow(timeText, periodText, FontFamily.Serif, FontWeight.Normal, 36, primaryText, accentText)
                         Spacer(modifier = Modifier.height(6.dp))
@@ -440,6 +442,7 @@ private fun ClockWidgetLivePreview(
                             text = dateText,
                             style = AppTypography.label.copy(fontFamily = FontFamily.Serif),
                             color = secondaryText,
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         PreviewAlarmPill(
@@ -714,11 +717,12 @@ private fun ClockWidgetStyleTile(
                     ClockWidgetStyle.BOLD_EDGE -> Row(
                         modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         Box(
                             modifier = Modifier
                                 .width(3.dp)
-                                .fillMaxHeight()
+                                .height(16.dp)
                                 .clip(CircleShape)
                                 .background(colors.accent),
                         )
@@ -728,7 +732,7 @@ private fun ClockWidgetStyleTile(
 
                     ClockWidgetStyle.EDITORIAL_SERIF -> Column(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-                        horizontalAlignment = Alignment.Start,
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text("08:30", fontSize = 10.sp, fontFamily = FontFamily.Serif, color = fgPrimary)
                         Spacer(modifier = Modifier.height(2.dp))
