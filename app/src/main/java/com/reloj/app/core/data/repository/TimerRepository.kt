@@ -3,6 +3,7 @@ package com.reloj.app.core.data.repository
 import android.content.Context
 import com.reloj.app.core.alarm.AlarmAlertService
 import com.reloj.app.core.alarm.AlarmScheduler
+import com.reloj.app.core.alarm.NotificationHelper
 import com.reloj.app.core.data.local.AppDatabase
 import com.reloj.app.core.data.local.CustomSoundManager
 import com.reloj.app.core.data.local.TimerEntity
@@ -70,6 +71,7 @@ class TimerRepository private constructor(context: Context) {
         }
         dao.update(updated)
         CustomSoundManager.pruneUnusedSounds(appContext)
+        syncNotifications()
     }
 
     suspend fun delete(timer: TimerEntity) {
@@ -77,6 +79,7 @@ class TimerRepository private constructor(context: Context) {
         AlarmAlertService.stopIfMatching(appContext, isAlarm = false, itemId = timer.id)
         dao.delete(timer)
         CustomSoundManager.pruneUnusedSounds(appContext)
+        syncNotifications()
     }
 
     suspend fun start(id: Long, now: Long = System.currentTimeMillis()) {
@@ -91,6 +94,7 @@ class TimerRepository private constructor(context: Context) {
             ),
         )
         scheduler.schedule(id, endAt)
+        syncNotifications(now)
     }
 
     suspend fun pause(id: Long, now: Long = System.currentTimeMillis()) {
@@ -104,6 +108,7 @@ class TimerRepository private constructor(context: Context) {
                 remainingMillis = (endAt - now).coerceAtLeast(0),
             ),
         )
+        syncNotifications(now)
     }
 
     suspend fun reset(id: Long) {
@@ -113,6 +118,7 @@ class TimerRepository private constructor(context: Context) {
         dao.update(
             timer.copy(state = TimerState.IDLE, endAtMillis = null, remainingMillis = null),
         )
+        syncNotifications()
     }
 
     suspend fun extendSnooze(id: Long, extraMillis: Long = 60_000L, now: Long = System.currentTimeMillis()) {
@@ -126,6 +132,7 @@ class TimerRepository private constructor(context: Context) {
             ),
         )
         scheduler.schedule(id, endAt)
+        syncNotifications(now)
     }
 
     suspend fun addMinute(id: Long, extraMillis: Long = 60_000L, now: Long = System.currentTimeMillis()) {
@@ -136,6 +143,7 @@ class TimerRepository private constructor(context: Context) {
                 val newEnd = baseEnd + extraMillis
                 dao.update(timer.copy(endAtMillis = newEnd))
                 scheduler.schedule(id, newEnd)
+                syncNotifications(now)
             }
             TimerState.PAUSED -> {
                 val newRemaining = (timer.remainingMillis ?: timer.durationMillis) + extraMillis
@@ -150,6 +158,7 @@ class TimerRepository private constructor(context: Context) {
         dao.update(
             timer.copy(state = TimerState.FINISHED, endAtMillis = null, remainingMillis = null),
         )
+        syncNotifications()
     }
 
     /** Reprograma las alarmas tras reiniciar el teléfono. */
@@ -159,6 +168,11 @@ class TimerRepository private constructor(context: Context) {
             if (timer.state != TimerState.RUNNING) continue
             if (endAt <= now) markFinished(timer.id) else scheduler.schedule(timer.id, endAt)
         }
+        syncNotifications(now)
+    }
+
+    suspend fun syncNotifications(now: Long = System.currentTimeMillis()) {
+        NotificationHelper.syncRunningTimerNotifications(appContext, dao.getAll(), now)
     }
 
     companion object {

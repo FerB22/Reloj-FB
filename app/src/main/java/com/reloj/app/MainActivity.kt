@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import com.reloj.app.core.alarm.NotificationHelper
 import com.reloj.app.core.data.local.AppIconManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.data.repository.AlarmRepository
@@ -102,6 +103,11 @@ class MainActivity : ComponentActivity() {
                 val alarmRepo = remember(this) { AlarmRepository.get(this) }
                 val timers by timerRepo.observeAll().collectAsState(initial = null)
                 val alarms by alarmRepo.observeAll().collectAsState(initial = null)
+
+                LaunchedEffect(timers) {
+                    val currentTimers = timers ?: return@LaunchedEffect
+                    NotificationHelper.syncRunningTimerNotifications(this@MainActivity, currentTimers)
+                }
 
                 val pagerState = rememberPagerState(
                     initialPage = AppTab.TIMERS.ordinal,

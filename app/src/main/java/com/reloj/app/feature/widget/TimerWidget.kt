@@ -258,6 +258,7 @@ class TimerWidgetReceiver : AppWidgetProvider() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                TimerRepository.get(context).syncNotifications()
                 TimerWidget.updateAll(context)
             } finally {
                 pending.finish()
@@ -276,7 +277,9 @@ class TimerWidgetReceiver : AppWidgetProvider() {
             ACTION_START,
             ACTION_PAUSE,
             ACTION_RESET,
+            ACTION_ADD_MINUTE,
             ACTION_BACK_TO_LIST,
+            ACTION_REPOST_ONGOING,
             -> {
                 val pending = goAsync()
                 val action = intent.action
@@ -304,11 +307,13 @@ class TimerWidgetReceiver : AppWidgetProvider() {
                             ACTION_START -> if (timerId >= 0L) repo.start(timerId)
                             ACTION_PAUSE -> if (timerId >= 0L) repo.pause(timerId)
                             ACTION_RESET -> if (timerId >= 0L) repo.reset(timerId)
+                            ACTION_ADD_MINUTE -> if (timerId >= 0L) repo.addMinute(timerId)
                             ACTION_BACK_TO_LIST -> {
                                 if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                                     WidgetFocusStore.clearFocus(context, appWidgetId)
                                 }
                             }
+                            ACTION_REPOST_ONGOING -> repo.syncNotifications()
                         }
                         TimerWidget.updateAll(context)
                     } finally {
@@ -325,7 +330,9 @@ class TimerWidgetReceiver : AppWidgetProvider() {
         const val ACTION_START = "com.reloj.app.widget.START"
         const val ACTION_PAUSE = "com.reloj.app.widget.PAUSE"
         const val ACTION_RESET = "com.reloj.app.widget.RESET"
+        const val ACTION_ADD_MINUTE = "com.reloj.app.widget.ADD_MINUTE"
         const val ACTION_BACK_TO_LIST = "com.reloj.app.widget.BACK_TO_LIST"
+        const val ACTION_REPOST_ONGOING = "com.reloj.app.widget.REPOST_ONGOING"
         const val EXTRA_TIMER_ID = "timer_id"
     }
 }
