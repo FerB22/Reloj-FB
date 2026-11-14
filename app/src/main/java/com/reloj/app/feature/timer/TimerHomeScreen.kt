@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.reloj.app.R
@@ -99,120 +100,124 @@ fun TimerHomeScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(colors.background)
-            .padding(top = 16.dp),
+            .background(colors.background),
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .fillMaxSize()
+                .padding(top = 16.dp),
         ) {
             Text(
                 text = "Temporizadores",
                 style = AppTypography.screenTitle,
                 color = colors.textPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
             )
 
-            if (!timers.isNullOrEmpty()) {
-                PrimaryPillButton(
-                    text = "Nuevo",
-                    onClick = { showCreateDialog = true },
-                )
-            }
-        }
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            QUICK_PRESET_MINUTES.forEach { minutes ->
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            runAndSyncWidget {
-                                repository.create(
-                                    label = "$minutes min",
-                                    durationMillis = minutes * 60_000L,
-                                )
-                            }
-                        },
-                    shape = RoundedCornerShape(12.dp),
-                    color = colors.surface,
-                    border = BorderStroke(1.dp, colors.outline),
-                ) {
-                    Text(
-                        text = "+ $minutes min",
-                        style = AppTypography.label,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        if (timers != null) {
-            if (timers.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    EmptyStateCard(
-                        iconRes = R.drawable.ic_timer,
-                        title = "No hay temporizadores",
-                        description = "Añade un temporizador personalizado o usa un acceso rápido arriba.",
-                        actionText = "Añadir",
-                        onAction = { showCreateDialog = true },
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(timers, key = { it.id }) { timer ->
-                        TimerCard(
-                            timer = timer,
-                            nowMillis = nowMillis,
-                            onClick = { editingTimer = timer },
-                            onStart = {
-                                nowMillis = System.currentTimeMillis()
-                                runAndSyncWidget { repository.start(timer.id, nowMillis) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                QUICK_PRESET_MINUTES.forEach { minutes ->
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                runAndSyncWidget {
+                                    repository.create(
+                                        label = "$minutes min",
+                                        durationMillis = minutes * 60_000L,
+                                    )
+                                }
                             },
-                            onPause = {
-                                nowMillis = System.currentTimeMillis()
-                                runAndSyncWidget { repository.pause(timer.id, nowMillis) }
-                            },
-                            onAddMinute = {
-                                nowMillis = System.currentTimeMillis()
-                                runAndSyncWidget { repository.addMinute(timer.id, now = nowMillis) }
-                            },
-                            onReset = {
-                                runAndSyncWidget { repository.reset(timer.id) }
-                            },
-                            onDelete = {
-                                runAndSyncWidget { repository.delete(timer) }
-                            },
+                        shape = RoundedCornerShape(12.dp),
+                        color = colors.surface,
+                        border = BorderStroke(1.dp, colors.outline),
+                    ) {
+                        Text(
+                            text = "+ $minutes min",
+                            style = AppTypography.label,
+                            color = colors.textSecondary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if (timers != null) {
+                if (timers.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        EmptyStateCard(
+                            iconRes = R.drawable.ic_timer,
+                            title = "No hay temporizadores",
+                            description = "Añade un temporizador personalizado o usa un acceso rápido arriba.",
+                            actionText = "Añadir",
+                            onAction = { showCreateDialog = true },
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 84.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(timers, key = { it.id }) { timer ->
+                            TimerCard(
+                                timer = timer,
+                                nowMillis = nowMillis,
+                                onClick = { editingTimer = timer },
+                                onStart = {
+                                    nowMillis = System.currentTimeMillis()
+                                    runAndSyncWidget { repository.start(timer.id, nowMillis) }
+                                },
+                                onPause = {
+                                    nowMillis = System.currentTimeMillis()
+                                    runAndSyncWidget { repository.pause(timer.id, nowMillis) }
+                                },
+                                onAddMinute = {
+                                    nowMillis = System.currentTimeMillis()
+                                    runAndSyncWidget { repository.addMinute(timer.id, now = nowMillis) }
+                                },
+                                onReset = {
+                                    runAndSyncWidget { repository.reset(timer.id) }
+                                },
+                                onDelete = {
+                                    runAndSyncWidget { repository.delete(timer) }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!timers.isNullOrEmpty()) {
+            PrimaryPillButton(
+                text = "Nuevo",
+                onClick = { showCreateDialog = true },
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 18.dp),
+            )
         }
     }
 

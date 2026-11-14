@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.reloj.app.R
@@ -91,75 +92,79 @@ fun AlarmScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(colors.background)
-            .padding(top = 16.dp),
+            .background(colors.background),
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .fillMaxSize()
+                .padding(top = 16.dp),
         ) {
             Text(
                 text = "Alarmas",
                 style = AppTypography.screenTitle,
                 color = colors.textPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
             )
 
-            if (!alarms.isNullOrEmpty()) {
-                PrimaryPillButton(
-                    text = "Nuevo",
-                    onClick = { showCreateDialog = true },
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (alarms != null) {
+                if (alarms.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        EmptyStateCard(
+                            iconRes = R.drawable.ic_alarm,
+                            title = "Sin alarmas configuradas",
+                            description = "Crea una alarma para programar tu próximo aviso.",
+                            actionText = "Añadir",
+                            onAction = { showCreateDialog = true },
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 84.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(alarms, key = { it.id }) { alarm ->
+                            AlarmCard(
+                                alarm = alarm,
+                                use24HourFormat = use24HourFormat,
+                                nowMillis = nowMillis,
+                                onClick = { editingAlarm = alarm },
+                                onToggle = { enabled ->
+                                    nowMillis = System.currentTimeMillis()
+                                    scope.launch { repository.setEnabled(alarm.id, enabled) }
+                                },
+                                onDelete = {
+                                    scope.launch { repository.delete(alarm) }
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (alarms != null) {
-            if (alarms.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    EmptyStateCard(
-                        iconRes = R.drawable.ic_alarm,
-                        title = "Sin alarmas configuradas",
-                        description = "Crea una alarma para programar tu próximo aviso.",
-                        actionText = "Añadir",
-                        onAction = { showCreateDialog = true },
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(alarms, key = { it.id }) { alarm ->
-                        AlarmCard(
-                            alarm = alarm,
-                            use24HourFormat = use24HourFormat,
-                            nowMillis = nowMillis,
-                            onClick = { editingAlarm = alarm },
-                            onToggle = { enabled ->
-                                nowMillis = System.currentTimeMillis()
-                                scope.launch { repository.setEnabled(alarm.id, enabled) }
-                            },
-                            onDelete = {
-                                scope.launch { repository.delete(alarm) }
-                            },
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
-                }
-            }
+        if (!alarms.isNullOrEmpty()) {
+            PrimaryPillButton(
+                text = "Nuevo",
+                onClick = { showCreateDialog = true },
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 18.dp),
+            )
         }
     }
 

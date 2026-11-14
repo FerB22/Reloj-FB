@@ -68,6 +68,7 @@ fun PrimaryPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconRes: Int = R.drawable.ic_add,
+    shadowElevation: Dp = 0.dp,
 ) {
     val colors = AppTheme.colors
     val view = LocalView.current
@@ -80,6 +81,7 @@ fun PrimaryPillButton(
             },
         shape = RoundedCornerShape(14.dp),
         color = colors.accent,
+        shadowElevation = shadowElevation,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
