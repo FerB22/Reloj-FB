@@ -133,7 +133,7 @@ fun AlarmScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 84.dp),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 100.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(alarms, key = { it.id }) { alarm ->
@@ -161,6 +161,7 @@ fun AlarmScreen(
                 text = "Nuevo",
                 onClick = { showCreateDialog = true },
                 shadowElevation = 6.dp,
+                large = true,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 20.dp, bottom = 18.dp),

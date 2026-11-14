@@ -53,12 +53,14 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.reloj.app.R
 import kotlinx.coroutines.delay
 
@@ -69,34 +71,43 @@ fun PrimaryPillButton(
     modifier: Modifier = Modifier,
     iconRes: Int = R.drawable.ic_add,
     shadowElevation: Dp = 0.dp,
+    large: Boolean = false,
 ) {
     val colors = AppTheme.colors
     val view = LocalView.current
+    val cornerRadius = if (large) 18.dp else 14.dp
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .clickable {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 onClick()
             },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(cornerRadius),
         color = colors.accent,
         shadowElevation = shadowElevation,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(
+                horizontal = if (large) 24.dp else 20.dp,
+                vertical = if (large) 16.dp else 12.dp,
+            ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (large) 10.dp else 8.dp),
         ) {
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
                 tint = colors.onAccent,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(if (large) 24.dp else 20.dp),
             )
             Text(
                 text = text,
-                style = AppTypography.label,
+                style = if (large) {
+                    AppTypography.body.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                } else {
+                    AppTypography.label.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                },
                 color = colors.onAccent,
             )
         }
