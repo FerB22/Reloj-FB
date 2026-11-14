@@ -81,6 +81,7 @@ import com.reloj.app.core.data.local.TimerSoundPreset
 import com.reloj.app.core.designsystem.AccentPreset
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
+import com.reloj.app.core.designsystem.ClockWidgetStyle
 import com.reloj.app.core.designsystem.SoundPickerSection
 import com.reloj.app.core.designsystem.ThemeMode
 import com.reloj.app.core.designsystem.buildAppColorScheme
@@ -92,6 +93,7 @@ fun SettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     onAccentChange: (AccentPreset) -> Unit,
     onTimeFormatChange: (Boolean) -> Unit,
+    onClockWidgetStyleChange: (ClockWidgetStyle) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
@@ -387,6 +389,20 @@ fun SettingsScreen(
                 }
             }
         }
+
+        SectionHeader("WIDGET DE RELOJ")
+
+        ClockWidgetStyleCard(
+            selectedStyle = appearance.clockWidgetStyle,
+            use24HourFormat = appearance.use24HourFormat,
+            onSelectStyle = onClockWidgetStyleChange,
+            expandIcon = { rotation ->
+                AccentExpandArrow(
+                    rotationDegrees = rotation,
+                    tint = colors.textSecondary,
+                )
+            },
+        )
 
         SectionHeader("ICONO DE LA APLICACIÓN")
 

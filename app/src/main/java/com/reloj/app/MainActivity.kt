@@ -182,6 +182,7 @@ class MainActivity : ComponentActivity() {
                                     alarms = alarms,
                                     repository = alarmRepo,
                                     use24HourFormat = appearance.use24HourFormat,
+                                    clockStyle = appearance.clockWidgetStyle,
                                 )
                                 AppTab.TIMERS -> TimerHomeScreen(
                                     timers = timers,
@@ -205,6 +206,12 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onTimeFormatChange = { use24Hour ->
                                         themePrefs.setUse24HourFormat(use24Hour)
+                                        scope.launch {
+                                            ClockWidget.updateAll(this@MainActivity)
+                                        }
+                                    },
+                                    onClockWidgetStyleChange = { style ->
+                                        themePrefs.setClockWidgetStyle(style)
                                         scope.launch {
                                             ClockWidget.updateAll(this@MainActivity)
                                         }

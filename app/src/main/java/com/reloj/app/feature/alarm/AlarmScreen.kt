@@ -44,6 +44,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +63,7 @@ import com.reloj.app.core.data.local.isSilentSoundPreset
 import com.reloj.app.core.data.repository.AlarmRepository
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
+import com.reloj.app.core.designsystem.ClockWidgetStyle
 import com.reloj.app.core.designsystem.ConfirmDeleteButton
 import com.reloj.app.core.designsystem.EmptyStateCard
 import com.reloj.app.core.designsystem.NumberStepper
@@ -76,6 +79,7 @@ fun AlarmScreen(
     alarms: List<AlarmEntity>?,
     repository: AlarmRepository,
     use24HourFormat: Boolean,
+    clockStyle: ClockWidgetStyle = ClockWidgetStyle.CLASSIC,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -140,6 +144,7 @@ fun AlarmScreen(
                     LiveClockHeader(
                         nowMillis = nowMillis,
                         use24HourFormat = use24HourFormat,
+                        clockStyle = clockStyle,
                         nextAlarmText = null,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
                     )
@@ -168,6 +173,7 @@ fun AlarmScreen(
                             LiveClockHeader(
                                 nowMillis = nowMillis,
                                 use24HourFormat = use24HourFormat,
+                                clockStyle = clockStyle,
                                 nextAlarmText = nextAlarmSummary,
                                 modifier = Modifier.padding(bottom = 8.dp),
                             )
@@ -263,6 +269,7 @@ fun AlarmScreen(
 private fun LiveClockHeader(
     nowMillis: Long,
     use24HourFormat: Boolean,
+    clockStyle: ClockWidgetStyle,
     nextAlarmText: String?,
     modifier: Modifier = Modifier,
 ) {
@@ -272,94 +279,484 @@ private fun LiveClockHeader(
     val timePattern = remember(use24HourFormat) {
         SimpleDateFormat(if (use24HourFormat) "HH:mm" else "hh:mm", Locale.US)
     }
+    val hourPattern = remember(use24HourFormat) {
+        SimpleDateFormat(if (use24HourFormat) "HH" else "hh", Locale.US)
+    }
+    val minutePattern = remember { SimpleDateFormat("mm", Locale.US) }
     val secondsPattern = remember { SimpleDateFormat(":ss", Locale.US) }
     val periodPattern = remember { SimpleDateFormat("a", Locale.US) }
 
     val nowDate = remember(nowMillis) { Date(nowMillis) }
     val mainTimeText = remember(nowMillis, use24HourFormat) { timePattern.format(nowDate) }
+    val hoursText = remember(nowMillis, use24HourFormat) { hourPattern.format(nowDate) }
+    val minutesText = remember(nowMillis) { minutePattern.format(nowDate) }
     val secondsText = remember(nowMillis) { secondsPattern.format(nowDate) }
     val periodText = remember(nowMillis, use24HourFormat) {
         if (use24HourFormat) null else periodPattern.format(nowDate).uppercase(Locale.US)
     }
-    val dateText = remember(nowMillis / 60_000L) {
+    val rawDateText = remember(nowMillis / 60_000L) {
         datePattern.format(nowDate).replaceFirstChar { ch ->
             if (ch.isLowerCase()) ch.titlecase(spanishLocale) else ch.toString()
         }
     }
+    val dateText = if (clockStyle == ClockWidgetStyle.TECH_MONO) {
+        rawDateText.uppercase(spanishLocale)
+    } else {
+        rawDateText
+    }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = mainTimeText,
-                style = AppTypography.timerCard.copy(
-                    fontSize = 52.sp,
-                    lineHeight = 56.sp,
-                    fontFeatureSettings = "tnum",
-                ),
-                color = colors.textPrimary,
-            )
-            Text(
-                text = secondsText,
-                style = AppTypography.timerCard.copy(
-                    fontSize = 20.sp,
-                    lineHeight = 24.sp,
-                    fontFeatureSettings = "tnum",
-                ),
-                color = colors.textSecondary,
-                modifier = Modifier.padding(start = 4.dp, bottom = 7.dp),
-            )
-            if (periodText != null) {
-                Text(
-                    text = periodText,
-                    style = AppTypography.label.copy(fontSize = 13.sp),
-                    color = colors.accent,
-                    modifier = Modifier.padding(start = 6.dp, bottom = 8.dp),
+    val clockFontFamily = when (clockStyle) {
+        ClockWidgetStyle.TECH_MONO -> FontFamily.Monospace
+        ClockWidgetStyle.EDITORIAL_SERIF -> FontFamily.Serif
+        else -> FontFamily.Default
+    }
+    val clockFontWeight = when (clockStyle) {
+        ClockWidgetStyle.MINIMAL_CLEAR -> FontWeight.ExtraLight
+        ClockWidgetStyle.ACCENT_HERO, ClockWidgetStyle.BOLD_EDGE -> FontWeight.Bold
+        ClockWidgetStyle.STACKED_DUO, ClockWidgetStyle.SPLIT_TILES -> FontWeight.Medium
+        ClockWidgetStyle.TECH_MONO -> FontWeight.SemiBold
+        else -> FontWeight.Light
+    }
+
+    when (clockStyle) {
+        ClockWidgetStyle.COMPACT_ROW -> {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                InlineClockDigits(
+                    mainTimeText = mainTimeText,
+                    secondsText = secondsText,
+                    periodText = periodText,
+                    fontFamily = clockFontFamily,
+                    fontWeight = clockFontWeight,
+                    fontSizeSp = 44,
                 )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = dateText,
+                        style = AppTypography.body,
+                        color = colors.textSecondary,
+                        textAlign = TextAlign.End,
+                    )
+                    if (nextAlarmText != null) {
+                        NextAlarmBadge(nextAlarmText = nextAlarmText)
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = dateText,
-            style = AppTypography.body,
-            color = colors.textSecondary,
-            textAlign = TextAlign.Center,
-        )
-
-        if (nextAlarmText != null) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Surface(
-                shape = CircleShape,
-                color = colors.accent.copy(alpha = 0.12f),
-                border = BorderStroke(1.dp, colors.accent.copy(alpha = 0.28f)),
+        ClockWidgetStyle.STACKED_DUO -> {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_alarm),
-                        contentDescription = null,
-                        tint = colors.accent,
-                        modifier = Modifier.size(14.dp),
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = hoursText,
+                        style = AppTypography.timerCard.copy(
+                            fontFamily = clockFontFamily,
+                            fontWeight = clockFontWeight,
+                            fontSize = 44.sp,
+                            lineHeight = 44.sp,
+                            fontFeatureSettings = "tnum",
+                        ),
+                        color = colors.textPrimary,
                     )
                     Text(
-                        text = nextAlarmText,
-                        style = AppTypography.label,
-                        color = colors.accent,
+                        text = minutesText,
+                        style = AppTypography.timerCard.copy(
+                            fontFamily = clockFontFamily,
+                            fontWeight = clockFontWeight,
+                            fontSize = 44.sp,
+                            lineHeight = 44.sp,
+                            fontFeatureSettings = "tnum",
+                        ),
+                        color = colors.textPrimary,
+                    )
+                }
+                Spacer(modifier = Modifier.width(18.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = secondsText,
+                            style = AppTypography.timerCard.copy(
+                                fontFamily = clockFontFamily,
+                                fontSize = 18.sp,
+                                lineHeight = 22.sp,
+                                fontFeatureSettings = "tnum",
+                            ),
+                            color = colors.textSecondary,
+                        )
+                        if (periodText != null) {
+                            Text(
+                                text = periodText,
+                                style = AppTypography.label,
+                                color = colors.accent,
+                            )
+                        }
+                    }
+                    Text(
+                        text = dateText,
+                        style = AppTypography.body,
+                        color = colors.textSecondary,
+                    )
+                    if (nextAlarmText != null) {
+                        NextAlarmBadge(nextAlarmText = nextAlarmText)
+                    }
+                }
+            }
+        }
+
+        ClockWidgetStyle.SPLIT_TILES -> {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    listOf(hoursText, minutesText).forEachIndexed { idx, part ->
+                        if (idx > 0) Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = colors.surfaceElevated,
+                            border = BorderStroke(1.dp, colors.outline),
+                        ) {
+                            Text(
+                                text = part,
+                                style = AppTypography.timerCard.copy(
+                                    fontFamily = clockFontFamily,
+                                    fontWeight = clockFontWeight,
+                                    fontSize = 40.sp,
+                                    lineHeight = 44.sp,
+                                    fontFeatureSettings = "tnum",
+                                ),
+                                color = colors.textPrimary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.padding(start = 8.dp, bottom = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = secondsText,
+                            style = AppTypography.timerCard.copy(
+                                fontSize = 16.sp,
+                                lineHeight = 20.sp,
+                                fontFeatureSettings = "tnum",
+                            ),
+                            color = colors.textSecondary,
+                        )
+                        if (periodText != null) {
+                            Text(
+                                text = periodText,
+                                style = AppTypography.label,
+                                color = colors.accent,
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = dateText,
+                    style = AppTypography.body,
+                    color = colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                if (nextAlarmText != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NextAlarmBadge(nextAlarmText = nextAlarmText)
+                }
+            }
+        }
+
+        ClockWidgetStyle.CAPSULE_SPLIT -> {
+            Surface(
+                modifier = modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.outline),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        InlineClockDigits(
+                            mainTimeText = mainTimeText,
+                            secondsText = secondsText,
+                            periodText = periodText,
+                            fontFamily = clockFontFamily,
+                            fontWeight = clockFontWeight,
+                            fontSizeSp = 48,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colors.surfaceElevated)
+                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = dateText,
+                            style = AppTypography.label,
+                            color = colors.textSecondary,
+                        )
+                        if (nextAlarmText != null) {
+                            NextAlarmBadge(nextAlarmText = nextAlarmText, compact = true)
+                        }
+                    }
+                }
+            }
+        }
+
+        ClockWidgetStyle.BOLD_EDGE -> {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(78.dp)
+                        .clip(CircleShape)
+                        .background(colors.outline),
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    InlineClockDigits(
+                        mainTimeText = mainTimeText,
+                        secondsText = secondsText,
+                        periodText = periodText,
+                        fontFamily = clockFontFamily,
+                        fontWeight = clockFontWeight,
+                        fontSizeSp = 50,
+                        letterSpacingSp = -1.5f,
+                    )
+                    Text(
+                        text = dateText,
+                        style = AppTypography.body,
+                        color = colors.textSecondary,
+                    )
+                    if (nextAlarmText != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        NextAlarmBadge(nextAlarmText = nextAlarmText)
+                    }
+                }
+            }
+        }
+
+        ClockWidgetStyle.EDITORIAL_SERIF -> {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                InlineClockDigits(
+                    mainTimeText = mainTimeText,
+                    secondsText = secondsText,
+                    periodText = periodText,
+                    fontFamily = clockFontFamily,
+                    fontWeight = clockFontWeight,
+                    fontSizeSp = 50,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .width(38.dp)
+                        .height(2.dp)
+                        .background(colors.outline),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = dateText,
+                    style = AppTypography.body.copy(fontFamily = FontFamily.Serif),
+                    color = colors.textSecondary,
+                )
+                if (nextAlarmText != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NextAlarmBadge(nextAlarmText = nextAlarmText)
+                }
+            }
+        }
+
+        ClockWidgetStyle.CLASSIC,
+        ClockWidgetStyle.MINIMAL_CLEAR,
+        ClockWidgetStyle.ACCENT_HERO,
+        ClockWidgetStyle.TECH_MONO,
+        -> {
+            val containerModifier = if (clockStyle == ClockWidgetStyle.TECH_MONO) {
+                modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(colors.surface)
+                    .padding(vertical = 14.dp, horizontal = 16.dp)
+            } else {
+                modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            }
+            Column(
+                modifier = containerModifier,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (clockStyle == ClockWidgetStyle.TECH_MONO) {
+                    Text(
+                        text = dateText,
+                        style = AppTypography.label.copy(
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.2.sp,
+                        ),
+                        color = colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+                InlineClockDigits(
+                    mainTimeText = mainTimeText,
+                    secondsText = secondsText,
+                    periodText = periodText,
+                    fontFamily = clockFontFamily,
+                    fontWeight = clockFontWeight,
+                    fontSizeSp = when (clockStyle) {
+                        ClockWidgetStyle.MINIMAL_CLEAR -> 54
+                        ClockWidgetStyle.TECH_MONO -> 44
+                        else -> 52
+                    },
+                )
+                if (clockStyle != ClockWidgetStyle.TECH_MONO) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = dateText,
+                        style = AppTypography.body,
+                        color = colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                if (nextAlarmText != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    NextAlarmBadge(
+                        nextAlarmText = nextAlarmText,
+                        monospace = clockStyle == ClockWidgetStyle.TECH_MONO,
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun InlineClockDigits(
+    mainTimeText: String,
+    secondsText: String,
+    periodText: String?,
+    fontFamily: FontFamily,
+    fontWeight: FontWeight,
+    fontSizeSp: Int,
+    letterSpacingSp: Float = -0.5f,
+) {
+    val colors = AppTheme.colors
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = mainTimeText,
+            style = AppTypography.timerCard.copy(
+                fontFamily = fontFamily,
+                fontWeight = fontWeight,
+                fontSize = fontSizeSp.sp,
+                lineHeight = (fontSizeSp + 4).sp,
+                letterSpacing = letterSpacingSp.sp,
+                fontFeatureSettings = "tnum",
+            ),
+            color = colors.textPrimary,
+        )
+        Text(
+            text = secondsText,
+            style = AppTypography.timerCard.copy(
+                fontFamily = fontFamily,
+                fontSize = (fontSizeSp * 0.38f).toInt().sp,
+                lineHeight = ((fontSizeSp * 0.38f).toInt() + 4).sp,
+                fontFeatureSettings = "tnum",
+            ),
+            color = colors.textSecondary,
+            modifier = Modifier.padding(start = 4.dp, bottom = 7.dp),
+        )
+        if (periodText != null) {
+            Text(
+                text = periodText,
+                style = AppTypography.label.copy(
+                    fontFamily = fontFamily,
+                    fontSize = 13.sp,
+                ),
+                color = colors.accent,
+                modifier = Modifier.padding(start = 6.dp, bottom = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NextAlarmBadge(
+    nextAlarmText: String,
+    compact: Boolean = false,
+    monospace: Boolean = false,
+) {
+    val colors = AppTheme.colors
+    Surface(
+        shape = if (monospace) RoundedCornerShape(8.dp) else CircleShape,
+        color = colors.accent.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, colors.accent.copy(alpha = 0.28f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (compact) 10.dp else 12.dp,
+                vertical = if (compact) 4.dp else 6.dp,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_alarm),
+                contentDescription = null,
+                tint = colors.accent,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = nextAlarmText,
+                style = if (monospace) {
+                    AppTypography.label.copy(fontFamily = FontFamily.Monospace)
+                } else {
+                    AppTypography.label
+                },
+                color = colors.accent,
+            )
         }
     }
 }

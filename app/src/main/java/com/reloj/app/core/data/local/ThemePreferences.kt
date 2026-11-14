@@ -2,6 +2,7 @@ package com.reloj.app.core.data.local
 
 import android.content.Context
 import com.reloj.app.core.designsystem.AccentPreset
+import com.reloj.app.core.designsystem.ClockWidgetStyle
 import com.reloj.app.core.designsystem.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +12,7 @@ data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val accent: AccentPreset = AccentPreset.AMBER,
     val use24HourFormat: Boolean = true,
+    val clockWidgetStyle: ClockWidgetStyle = ClockWidgetStyle.CLASSIC,
 )
 
 class ThemePreferences private constructor(context: Context) {
@@ -26,10 +28,14 @@ class ThemePreferences private constructor(context: Context) {
             ?.let { runCatching { AccentPreset.valueOf(it) }.getOrNull() }
             ?: AccentPreset.AMBER
         val use24Hour = prefs.getBoolean(KEY_USE_24H, true)
+        val clockWidgetStyle = prefs.getString(KEY_CLOCK_WIDGET_STYLE, null)
+            ?.let { runCatching { ClockWidgetStyle.valueOf(it) }.getOrNull() }
+            ?: ClockWidgetStyle.CLASSIC
         return AppearanceSettings(
             themeMode = mode,
             accent = accent,
             use24HourFormat = use24Hour,
+            clockWidgetStyle = clockWidgetStyle,
         )
     }
 
@@ -48,11 +54,17 @@ class ThemePreferences private constructor(context: Context) {
         _settings.value = _settings.value.copy(use24HourFormat = use24Hour)
     }
 
+    fun setClockWidgetStyle(style: ClockWidgetStyle) {
+        prefs.edit().putString(KEY_CLOCK_WIDGET_STYLE, style.name).apply()
+        _settings.value = _settings.value.copy(clockWidgetStyle = style)
+    }
+
     companion object {
         private const val PREFS_NAME = "reloj_appearance"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_ACCENT = "accent_preset"
         private const val KEY_USE_24H = "use_24h_format"
+        private const val KEY_CLOCK_WIDGET_STYLE = "clock_widget_style"
 
         @Volatile private var instance: ThemePreferences? = null
 

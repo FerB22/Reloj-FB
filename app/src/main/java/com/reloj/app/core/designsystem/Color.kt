@@ -111,6 +111,19 @@ enum class AccentPreset(
     ),
 }
 
+enum class ClockWidgetStyle(val label: String) {
+    CLASSIC("Clásico"),
+    MINIMAL_CLEAR("Transparente"),
+    COMPACT_ROW("Barra lateral"),
+    STACKED_DUO("Apilado"),
+    SPLIT_TILES("Dos bloques"),
+    ACCENT_HERO("Acento sólido"),
+    TECH_MONO("Técnico"),
+    CAPSULE_SPLIT("Cápsula"),
+    BOLD_EDGE("Barra acento"),
+    EDITORIAL_SERIF("Editorial"),
+}
+
 /**
  * Paleta semántica de la aplicación. Las pantallas leen estos roles desde
  * [LocalAppColors] y nunca colores sueltos, de modo que cambiar de modo o acento
