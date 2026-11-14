@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -128,51 +129,56 @@ internal fun ClockWidgetStyleCard(
                 }
             }
 
-            ClockWidgetLivePreview(
-                style = selectedStyle,
-                colors = colors,
-                nowMillis = nowMillis,
-                use24HourFormat = use24HourFormat,
-                onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                    expanded = !expanded
-                },
-            )
+            Column {
+                ClockWidgetLivePreview(
+                    style = selectedStyle,
+                    colors = colors,
+                    nowMillis = nowMillis,
+                    use24HourFormat = use24HourFormat,
+                    onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        expanded = !expanded
+                    },
+                )
 
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(
-                    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
-                    expandFrom = Alignment.Top,
-                ) + fadeIn(
-                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                ),
-                exit = shrinkVertically(
-                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                    shrinkTowards = Alignment.Top,
-                ) + fadeOut(
-                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-                ),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ClockWidgetStyle.entries.chunked(5).forEach { rowStyles ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            rowStyles.forEach { style ->
-                                ClockWidgetStyleTile(
-                                    style = style,
-                                    selected = selectedStyle == style,
-                                    colors = colors,
-                                    onClick = {
-                                        if (selectedStyle != style) {
-                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                            onSelectStyle(style)
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = expandVertically(
+                        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+                        expandFrom = Alignment.Top,
+                    ) + fadeIn(
+                        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                    ),
+                    exit = shrinkVertically(
+                        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                        shrinkTowards = Alignment.Top,
+                    ) + fadeOut(
+                        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(top = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        ClockWidgetStyle.entries.chunked(5).forEach { rowStyles ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                rowStyles.forEach { style ->
+                                    ClockWidgetStyleTile(
+                                        style = style,
+                                        selected = selectedStyle == style,
+                                        colors = colors,
+                                        onClick = {
+                                            if (selectedStyle != style) {
+                                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                                onSelectStyle(style)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                             }
                         }
                     }
@@ -180,11 +186,7 @@ internal fun ClockWidgetStyleCard(
             }
 
             Text(
-                text = if (expanded) {
-                    "Toca cualquier diseño para aplicarlo al widget y al reloj en Alarmas."
-                } else {
-                    "Toca la vista previa para elegir entre los 10 estilos disponibles."
-                },
+                text = "Toca la vista previa para elegir entre los 10 estilos disponibles.",
                 style = AppTypography.label,
                 color = colors.textSecondary,
             )
@@ -233,6 +235,7 @@ private fun ClockWidgetLivePreview(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 160.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(wallpaperGradient))
             .clickable(onClick = onClick)
