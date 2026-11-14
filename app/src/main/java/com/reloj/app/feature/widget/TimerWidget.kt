@@ -7,9 +7,13 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
+import android.os.Binder
+import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
+import android.widget.RemoteViewsService
 import androidx.compose.ui.graphics.toArgb
 import com.reloj.app.MainActivity
 import com.reloj.app.R
@@ -22,10 +26,10 @@ import com.reloj.app.core.designsystem.buildAppColorScheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.Objects
 
 object TimerWidget {
-    private const val MAX_LIST_ROWS = 5
 
     suspend fun updateAll(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
@@ -43,13 +47,16 @@ object TimerWidget {
             val views = if (focusedTimer != null) {
                 buildFocusedViews(context, appWidgetId, focusedTimer, scheme, nowMillis, elapsedNow)
             } else {
-                buildListViews(context, appWidgetId, timers, scheme, nowMillis)
+                buildListViews(context, appWidgetId, timers, scheme)
             }
             manager.updateAppWidget(appWidgetId, views)
+            if (focusedTimer == null && timers.isNotEmpty()) {
+                manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+            }
         }
     }
 
-    private fun resolveColorScheme(context: Context): AppColorScheme {
+    internal fun resolveColorScheme(context: Context): AppColorScheme {
         val appearance = ThemePreferences.get(context).settings.value
         val nightMask = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         val systemDark = nightMask == Configuration.UI_MODE_NIGHT_YES
@@ -65,7 +72,6 @@ object TimerWidget {
         appWidgetId: Int,
         timers: List<TimerEntity>,
         scheme: AppColorScheme,
-        nowMillis: Long,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_timer_list)
         views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
@@ -74,66 +80,43 @@ object TimerWidget {
         views.setTextColor(R.id.btn_open_app_text, scheme.textSecondary.toArgb())
         views.setOnClickPendingIntent(R.id.btn_open_app, openAppPendingIntent(context))
 
-        views.removeAllViews(R.id.widget_list_container)
-
         if (timers.isEmpty()) {
             views.setViewVisibility(R.id.empty_container, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_list_container, View.GONE)
+            views.setViewVisibility(R.id.widget_list_view, View.GONE)
             views.setInt(R.id.empty_bg, "setColorFilter", scheme.surface.toArgb())
             views.setTextColor(R.id.empty_text, scheme.textSecondary.toArgb())
             views.setOnClickPendingIntent(R.id.empty_container, openAppPendingIntent(context))
         } else {
             views.setViewVisibility(R.id.empty_container, View.GONE)
-            views.setViewVisibility(R.id.widget_list_container, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_list_view, View.VISIBLE)
 
-            timers.take(MAX_LIST_ROWS).forEach { timer ->
-                val remaining = remainingForDisplay(timer, nowMillis)
-                val isRunning = timer.state == TimerState.RUNNING && remaining > 0L
-
-                val row = RemoteViews(context.packageName, R.layout.widget_timer_row)
-                row.setInt(R.id.row_bg, "setColorFilter", scheme.surface.toArgb())
-                row.setTextViewText(R.id.row_label, timer.label)
-                row.setTextColor(R.id.row_label, scheme.textPrimary.toArgb())
-
-                when {
-                    isRunning -> {
-                        row.setViewVisibility(R.id.row_status, View.VISIBLE)
-                        row.setTextViewText(R.id.row_status, "En curso")
-                        row.setTextColor(R.id.row_status, scheme.accent.toArgb())
-                    }
-                    timer.state == TimerState.PAUSED -> {
-                        row.setViewVisibility(R.id.row_status, View.VISIBLE)
-                        row.setTextViewText(R.id.row_status, "Pausado")
-                        row.setTextColor(R.id.row_status, scheme.textSecondary.toArgb())
-                    }
-                    else -> {
-                        row.setViewVisibility(R.id.row_status, View.GONE)
-                    }
-                }
-
-                row.setTextViewText(R.id.row_time, formatMillis(remaining))
-                row.setTextColor(
-                    R.id.row_time,
-                    if (isRunning) scheme.accent.toArgb() else scheme.textSecondary.toArgb(),
-                )
-
-                row.setInt(R.id.row_pill_bg, "setColorFilter", scheme.accent.toArgb())
-                row.setTextViewText(R.id.row_pill_text, if (isRunning) "Ver" else "▶")
-                row.setTextColor(R.id.row_pill_text, scheme.onAccent.toArgb())
-
-                row.setOnClickPendingIntent(
-                    R.id.row_root,
-                    widgetActionPendingIntent(
-                        context = context,
-                        action = TimerWidgetReceiver.ACTION_SELECT_START,
-                        appWidgetId = appWidgetId,
-                        timerId = timer.id,
-                    ),
-                )
-                views.addView(R.id.widget_list_container, row)
+            val serviceIntent = Intent(context, TimerWidgetService::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
             }
+            views.setRemoteAdapter(R.id.widget_list_view, serviceIntent)
+            views.setPendingIntentTemplate(
+                R.id.widget_list_view,
+                widgetListTemplatePendingIntent(context, appWidgetId),
+            )
         }
         return views
+    }
+
+    private fun widgetListTemplatePendingIntent(
+        context: Context,
+        appWidgetId: Int,
+    ): PendingIntent {
+        val intent = Intent(context, TimerWidgetReceiver::class.java).apply {
+            action = TimerWidgetReceiver.ACTION_SELECT_START
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        return PendingIntent.getBroadcast(context, appWidgetId, intent, flags)
     }
 
     private fun buildFocusedViews(
@@ -364,4 +347,131 @@ private fun formatMillis(millis: Long): String {
     } else {
         "%02d:%02d".format(minutes, seconds)
     }
+}
+
+class TimerWidgetService : RemoteViewsService() {
+    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
+        val appWidgetId = intent.getIntExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID,
+        )
+        return TimerWidgetRemoteViewsFactory(applicationContext, appWidgetId)
+    }
+}
+
+private class TimerWidgetRemoteViewsFactory(
+    private val context: Context,
+    private val appWidgetId: Int,
+) : RemoteViewsService.RemoteViewsFactory {
+
+    private data class Snapshot(
+        val timers: List<TimerEntity>,
+        val scheme: AppColorScheme,
+    )
+
+    @Volatile
+    private var snapshot: Snapshot = Snapshot(
+        timers = emptyList(),
+        scheme = TimerWidget.resolveColorScheme(context),
+    )
+
+    override fun onCreate() {
+        onDataSetChanged()
+    }
+
+    override fun onDataSetChanged() {
+        val identity = Binder.clearCallingIdentity()
+        try {
+            snapshot = runBlocking(Dispatchers.IO) {
+                Snapshot(
+                    timers = TimerRepository.get(context).getAll(),
+                    scheme = TimerWidget.resolveColorScheme(context),
+                )
+            }
+        } finally {
+            Binder.restoreCallingIdentity(identity)
+        }
+    }
+
+    override fun onDestroy() = Unit
+
+    override fun getCount(): Int = snapshot.timers.size
+
+    override fun getViewAt(position: Int): RemoteViews {
+        val current = snapshot
+        val timer = current.timers.getOrNull(position)
+            ?: return RemoteViews(context.packageName, R.layout.widget_timer_row)
+        val scheme = current.scheme
+        val nowMillis = System.currentTimeMillis()
+        val elapsedNow = SystemClock.elapsedRealtime()
+        val remaining = remainingForDisplay(timer, nowMillis)
+        val isRunning = timer.state == TimerState.RUNNING && remaining > 0L
+        val isFinished = timer.state == TimerState.FINISHED ||
+            (timer.state == TimerState.RUNNING && remaining == 0L)
+
+        val row = RemoteViews(context.packageName, R.layout.widget_timer_row)
+        row.setInt(R.id.row_bg, "setColorFilter", scheme.surface.toArgb())
+        row.setTextViewText(R.id.row_label, timer.label)
+        row.setTextColor(R.id.row_label, scheme.textPrimary.toArgb())
+
+        when {
+            isFinished -> {
+                row.setViewVisibility(R.id.row_status, View.VISIBLE)
+                row.setTextViewText(R.id.row_status, "Finalizado")
+                row.setTextColor(R.id.row_status, scheme.accent.toArgb())
+            }
+            isRunning -> {
+                row.setViewVisibility(R.id.row_status, View.VISIBLE)
+                row.setTextViewText(R.id.row_status, "En curso")
+                row.setTextColor(R.id.row_status, scheme.accent.toArgb())
+            }
+            timer.state == TimerState.PAUSED -> {
+                row.setViewVisibility(R.id.row_status, View.VISIBLE)
+                row.setTextViewText(R.id.row_status, "Pausado")
+                row.setTextColor(R.id.row_status, scheme.textSecondary.toArgb())
+            }
+            else -> {
+                row.setViewVisibility(R.id.row_status, View.GONE)
+            }
+        }
+
+        if (isRunning) {
+            val base = elapsedNow + remaining + 900L
+            row.setViewVisibility(R.id.row_chronometer, View.VISIBLE)
+            row.setViewVisibility(R.id.row_time, View.GONE)
+            row.setTextColor(R.id.row_chronometer, scheme.accent.toArgb())
+            row.setChronometerCountDown(R.id.row_chronometer, true)
+            row.setChronometer(R.id.row_chronometer, base, null, true)
+        } else {
+            row.setChronometer(R.id.row_chronometer, elapsedNow, null, false)
+            row.setViewVisibility(R.id.row_chronometer, View.GONE)
+            row.setViewVisibility(R.id.row_time, View.VISIBLE)
+            row.setTextViewText(R.id.row_time, formatMillis(remaining))
+            row.setTextColor(
+                R.id.row_time,
+                if (isFinished) scheme.accent.toArgb() else scheme.textSecondary.toArgb(),
+            )
+        }
+
+        row.setInt(R.id.row_pill_bg, "setColorFilter", scheme.accent.toArgb())
+        row.setTextViewText(R.id.row_pill_text, if (isRunning) "Ver" else "▶")
+        row.setTextColor(R.id.row_pill_text, scheme.onAccent.toArgb())
+
+        val fillInIntent = Intent().apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id)
+        }
+        row.setOnClickFillInIntent(R.id.row_root, fillInIntent)
+
+        return row
+    }
+
+    override fun getLoadingView(): RemoteViews? = null
+
+    override fun getViewTypeCount(): Int = 1
+
+    override fun getItemId(position: Int): Long =
+        snapshot.timers.getOrNull(position)?.id ?: position.toLong()
+
+    override fun hasStableIds(): Boolean = true
 }

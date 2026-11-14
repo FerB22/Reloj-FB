@@ -56,8 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.reloj.app.R
 import com.reloj.app.core.data.local.CustomSoundManager
+import com.reloj.app.core.data.local.SILENT_SOUND_PRESET
 import com.reloj.app.core.data.local.TimerEntity
 import com.reloj.app.core.data.local.TimerState
+import com.reloj.app.core.data.local.isSilentSoundPreset
 import com.reloj.app.core.data.repository.TimerRepository
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
@@ -355,12 +357,26 @@ private fun TimerCard(
                         .padding(end = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    val isSilent = isSilentSoundPreset(timer.soundPreset)
                     Text(
                         text = timer.label,
                         style = AppTypography.title,
                         color = colors.textPrimary,
                     )
-                    if (soundLabel != null) {
+                    if (isSilent) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.surfaceElevated,
+                            border = BorderStroke(1.dp, colors.outline),
+                        ) {
+                            Text(
+                                text = "Sin sonido · Solo vibración",
+                                style = AppTypography.label,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    } else if (soundLabel != null) {
                         Text(
                             text = "♪ $soundLabel",
                             style = AppTypography.label,
@@ -518,6 +534,15 @@ private fun TimerEditorDialog(
     var soundPreset by remember(initial) { mutableStateOf(initial?.soundPreset) }
     var customPath by remember(initial) { mutableStateOf(initial?.customSoundPath) }
     var customName by remember(initial) { mutableStateOf(initial?.customSoundName) }
+    var lastNonSilentPreset by remember(initial) {
+        mutableStateOf(initial?.soundPreset?.takeUnless { isSilentSoundPreset(it) })
+    }
+    var lastCustomPath by remember(initial) {
+        mutableStateOf(if (isSilentSoundPreset(initial?.soundPreset)) null else initial?.customSoundPath)
+    }
+    var lastCustomName by remember(initial) {
+        mutableStateOf(if (isSilentSoundPreset(initial?.soundPreset)) null else initial?.customSoundName)
+    }
 
     val totalMillis = (hours * 3600L + minutes * 60L + seconds) * 1000L
 
@@ -611,20 +636,46 @@ private fun TimerEditorDialog(
                     selectedPreset = soundPreset,
                     customSoundPath = customPath,
                     customSoundName = customName,
+                    allowSilentToggle = true,
+                    onToggleSoundEnabled = { enabled ->
+                        if (enabled) {
+                            soundPreset = lastNonSilentPreset
+                            customPath = lastCustomPath
+                            customName = lastCustomName
+                        } else {
+                            if (!isSilentSoundPreset(soundPreset)) {
+                                lastNonSilentPreset = soundPreset
+                                lastCustomPath = customPath
+                                lastCustomName = customName
+                            }
+                            soundPreset = SILENT_SOUND_PRESET
+                            customPath = null
+                            customName = null
+                        }
+                    },
                     onSelectDefault = {
                         soundPreset = null
                         customPath = null
                         customName = null
+                        lastNonSilentPreset = null
+                        lastCustomPath = null
+                        lastCustomName = null
                     },
                     onSelectPreset = { presetName ->
                         soundPreset = presetName
                         customPath = null
                         customName = null
+                        lastNonSilentPreset = presetName
+                        lastCustomPath = null
+                        lastCustomName = null
                     },
                     onCustomAudioImported = { path, name ->
                         soundPreset = "CUSTOM"
                         customPath = path
                         customName = name
+                        lastNonSilentPreset = "CUSTOM"
+                        lastCustomPath = path
+                        lastCustomName = name
                     },
                 )
 
