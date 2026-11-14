@@ -3,6 +3,8 @@
     <string name="app_name">Reloj</string>
     <string name="widget_label">Temporizadores</string>
     <string name="widget_description">Temporizadores guardados y cuenta regresiva en vivo</string>
+    <string name="clock_widget_label">Reloj digital</string>
+    <string name="clock_widget_description">Hora actual, fecha y próxima alarma con tu tema</string>
     <string name="widget_open_app">Abrir</string>
     <string name="timer_channel_name">Temporizadores</string>
     <string name="timer_finished">Temporizador finalizado</string>

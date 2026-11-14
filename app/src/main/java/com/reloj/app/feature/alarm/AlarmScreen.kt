@@ -46,7 +46,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmEntity
 import com.reloj.app.core.data.local.AlarmRepeatUtils
@@ -81,15 +86,31 @@ fun AlarmScreen(
     var editingAlarm by remember { mutableStateOf<AlarmEntity?>(null) }
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    val hasEnabled = alarms?.any { it.enabled } == true
-    LaunchedEffect(hasEnabled, alarms?.size) {
-        nowMillis = System.currentTimeMillis()
-        if (hasEnabled) {
-            while (true) {
-                delay(15_000L)
-                nowMillis = System.currentTimeMillis()
-            }
+    LaunchedEffect(Unit) {
+        while (true) {
+            nowMillis = System.currentTimeMillis()
+            delay(1_000L)
         }
+    }
+
+    val nextAlarmSummary = remember(alarms, nowMillis, use24HourFormat) {
+        alarms
+            ?.asSequence()
+            ?.filter { it.enabled }
+            ?.map { alarm ->
+                alarm to AlarmRepeatUtils.nextTriggerMillis(
+                    hour = alarm.hour,
+                    minute = alarm.minute,
+                    repeatDaysMask = alarm.repeatDaysMask,
+                    nowMillis = nowMillis,
+                )
+            }
+            ?.minByOrNull { it.second }
+            ?.let { (alarm, triggerMillis) ->
+                val time = AlarmRepeatUtils.formatAlarmTime(alarm.hour, alarm.minute, use24HourFormat)
+                val remaining = AlarmRepeatUtils.formatRemainingUntil(triggerMillis, nowMillis)
+                "Próxima · $time · $remaining"
+            }
     }
 
     Box(
@@ -112,13 +133,20 @@ fun AlarmScreen(
                     .padding(horizontal = 20.dp),
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (alarms != null) {
                 if (alarms.isEmpty()) {
+                    LiveClockHeader(
+                        nowMillis = nowMillis,
+                        use24HourFormat = use24HourFormat,
+                        nextAlarmText = null,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+                    )
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .weight(1f)
+                            .fillMaxWidth()
                             .padding(horizontal = 20.dp),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -136,6 +164,14 @@ fun AlarmScreen(
                         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 100.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        item(key = "live_clock_header") {
+                            LiveClockHeader(
+                                nowMillis = nowMillis,
+                                use24HourFormat = use24HourFormat,
+                                nextAlarmText = nextAlarmSummary,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
                         items(alarms, key = { it.id }) { alarm ->
                             AlarmCard(
                                 alarm = alarm,
@@ -220,6 +256,111 @@ fun AlarmScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun LiveClockHeader(
+    nowMillis: Long,
+    use24HourFormat: Boolean,
+    nextAlarmText: String?,
+    modifier: Modifier = Modifier,
+) {
+    val colors = AppTheme.colors
+    val spanishLocale = remember { Locale.forLanguageTag("es") }
+    val datePattern = remember(spanishLocale) { SimpleDateFormat("EEEE, d 'de' MMMM", spanishLocale) }
+    val timePattern = remember(use24HourFormat) {
+        SimpleDateFormat(if (use24HourFormat) "HH:mm" else "hh:mm", Locale.US)
+    }
+    val secondsPattern = remember { SimpleDateFormat(":ss", Locale.US) }
+    val periodPattern = remember { SimpleDateFormat("a", Locale.US) }
+
+    val nowDate = remember(nowMillis) { Date(nowMillis) }
+    val mainTimeText = remember(nowMillis, use24HourFormat) { timePattern.format(nowDate) }
+    val secondsText = remember(nowMillis) { secondsPattern.format(nowDate) }
+    val periodText = remember(nowMillis, use24HourFormat) {
+        if (use24HourFormat) null else periodPattern.format(nowDate).uppercase(Locale.US)
+    }
+    val dateText = remember(nowMillis / 60_000L) {
+        datePattern.format(nowDate).replaceFirstChar { ch ->
+            if (ch.isLowerCase()) ch.titlecase(spanishLocale) else ch.toString()
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = mainTimeText,
+                style = AppTypography.timerCard.copy(
+                    fontSize = 52.sp,
+                    lineHeight = 56.sp,
+                    fontFeatureSettings = "tnum",
+                ),
+                color = colors.textPrimary,
+            )
+            Text(
+                text = secondsText,
+                style = AppTypography.timerCard.copy(
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    fontFeatureSettings = "tnum",
+                ),
+                color = colors.textSecondary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 7.dp),
+            )
+            if (periodText != null) {
+                Text(
+                    text = periodText,
+                    style = AppTypography.label.copy(fontSize = 13.sp),
+                    color = colors.accent,
+                    modifier = Modifier.padding(start = 6.dp, bottom = 8.dp),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = dateText,
+            style = AppTypography.body,
+            color = colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
+
+        if (nextAlarmText != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Surface(
+                shape = CircleShape,
+                color = colors.accent.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, colors.accent.copy(alpha = 0.28f)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_alarm),
+                        contentDescription = null,
+                        tint = colors.accent,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Text(
+                        text = nextAlarmText,
+                        style = AppTypography.label,
+                        color = colors.accent,
+                    )
+                }
+            }
+        }
     }
 }
 

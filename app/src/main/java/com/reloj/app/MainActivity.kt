@@ -1,5 +1,6 @@
 package com.reloj.app
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
@@ -58,6 +59,7 @@ import com.reloj.app.core.designsystem.ThemeMode
 import com.reloj.app.feature.alarm.AlarmScreen
 import com.reloj.app.feature.settings.SettingsScreen
 import com.reloj.app.feature.timer.TimerHomeScreen
+import com.reloj.app.feature.widget.ClockWidget
 import com.reloj.app.feature.widget.TimerWidget
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -70,6 +72,14 @@ private enum class AppTab(val label: String, val iconRes: Int) {
 
 class MainActivity : ComponentActivity() {
 
+    private var requestedTab by mutableStateOf<AppTab?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedTab = parseTabExtra(intent)
+    }
+
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations) {
@@ -80,6 +90,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val themePrefs = ThemePreferences.get(this)
+        val initialTab = parseTabExtra(intent) ?: AppTab.TIMERS
 
         setContent {
             val appearance by themePrefs.settings.collectAsState()
@@ -110,11 +121,19 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val pagerState = rememberPagerState(
-                    initialPage = AppTab.TIMERS.ordinal,
+                    initialPage = initialTab.ordinal,
                     pageCount = { AppTab.entries.size },
                 )
                 val scope = rememberCoroutineScope()
                 val view = LocalView.current
+
+                LaunchedEffect(requestedTab) {
+                    val target = requestedTab ?: return@LaunchedEffect
+                    requestedTab = null
+                    if (pagerState.currentPage != target.ordinal) {
+                        pagerState.scrollToPage(target.ordinal)
+                    }
+                }
 
                 var lastPage by remember { mutableIntStateOf(pagerState.currentPage) }
                 var animatingFromTabClick by remember { mutableStateOf(false) }
@@ -172,14 +191,23 @@ class MainActivity : ComponentActivity() {
                                     appearance = appearance,
                                     onThemeModeChange = { mode ->
                                         themePrefs.setThemeMode(mode)
-                                        scope.launch { TimerWidget.updateAll(this@MainActivity) }
+                                        scope.launch {
+                                            TimerWidget.updateAll(this@MainActivity)
+                                            ClockWidget.updateAll(this@MainActivity)
+                                        }
                                     },
                                     onAccentChange = { accent ->
                                         themePrefs.setAccent(accent)
-                                        scope.launch { TimerWidget.updateAll(this@MainActivity) }
+                                        scope.launch {
+                                            TimerWidget.updateAll(this@MainActivity)
+                                            ClockWidget.updateAll(this@MainActivity)
+                                        }
                                     },
                                     onTimeFormatChange = { use24Hour ->
                                         themePrefs.setUse24HourFormat(use24Hour)
+                                        scope.launch {
+                                            ClockWidget.updateAll(this@MainActivity)
+                                        }
                                     },
                                 )
                             }
@@ -208,6 +236,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun parseTabExtra(intent: Intent?): AppTab? {
+        return when (intent?.getStringExtra(EXTRA_OPEN_TAB)) {
+            TAB_ALARMS -> AppTab.ALARMS
+            else -> null
+        }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_TAB = "extra_open_tab"
+        const val TAB_ALARMS = "ALARMS"
     }
 }
 

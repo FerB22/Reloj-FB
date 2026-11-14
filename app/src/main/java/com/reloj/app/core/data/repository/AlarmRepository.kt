@@ -7,6 +7,7 @@ import com.reloj.app.core.data.local.AlarmEntity
 import com.reloj.app.core.data.local.AlarmRepeatUtils
 import com.reloj.app.core.data.local.AppDatabase
 import com.reloj.app.core.data.local.CustomSoundManager
+import com.reloj.app.feature.widget.ClockWidget
 import kotlinx.coroutines.flow.Flow
 
 class AlarmRepository private constructor(context: Context) {
@@ -15,6 +16,8 @@ class AlarmRepository private constructor(context: Context) {
     private val scheduler = AlarmScheduler(appContext)
 
     fun observeAll(): Flow<List<AlarmEntity>> = dao.observeAll()
+
+    suspend fun getAll(): List<AlarmEntity> = dao.getAll()
 
     suspend fun getById(id: Long): AlarmEntity? = dao.getById(id)
 
@@ -42,6 +45,7 @@ class AlarmRepository private constructor(context: Context) {
             id,
             AlarmRepeatUtils.nextTriggerMillis(hour, minute, repeatDaysMask),
         )
+        ClockWidget.updateAll(appContext)
         return id
     }
 
@@ -73,6 +77,7 @@ class AlarmRepository private constructor(context: Context) {
             )
         }
         CustomSoundManager.pruneUnusedSounds(appContext)
+        ClockWidget.updateAll(appContext)
     }
 
     suspend fun setEnabled(id: Long, enabled: Boolean) {
@@ -87,6 +92,7 @@ class AlarmRepository private constructor(context: Context) {
             scheduler.cancelClockAlarm(id)
             AlarmAlertService.stopIfMatching(appContext, isAlarm = true, itemId = id)
         }
+        ClockWidget.updateAll(appContext)
     }
 
     suspend fun rescheduleSingle(id: Long) {
@@ -96,6 +102,7 @@ class AlarmRepository private constructor(context: Context) {
             id,
             AlarmRepeatUtils.nextTriggerMillis(alarm.hour, alarm.minute, alarm.repeatDaysMask),
         )
+        ClockWidget.updateAll(appContext)
     }
 
     suspend fun delete(alarm: AlarmEntity) {
@@ -103,6 +110,7 @@ class AlarmRepository private constructor(context: Context) {
         AlarmAlertService.stopIfMatching(appContext, isAlarm = true, itemId = alarm.id)
         dao.delete(alarm)
         CustomSoundManager.pruneUnusedSounds(appContext)
+        ClockWidget.updateAll(appContext)
     }
 
     suspend fun rescheduleEnabled() {
@@ -114,6 +122,7 @@ class AlarmRepository private constructor(context: Context) {
                 )
             }
         }
+        ClockWidget.updateAll(appContext)
     }
 
     companion object {
