@@ -142,6 +142,10 @@ class MainActivity : ComponentActivity() {
                 val timers by timerRepo.observeAll().collectAsState(initial = null)
                 val alarms by alarmRepo.observeAll().collectAsState(initial = null)
 
+                LaunchedEffect(Unit) {
+                    alarmRepo.rescheduleEnabled()
+                }
+
                 LaunchedEffect(timers) {
                     val currentTimers = timers ?: return@LaunchedEffect
                     NotificationHelper.syncRunningTimerNotifications(this@MainActivity, currentTimers)

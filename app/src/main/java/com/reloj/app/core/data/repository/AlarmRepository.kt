@@ -42,7 +42,7 @@ class AlarmRepository private constructor(context: Context) {
         )
         val id = dao.insert(alarm)
         scheduler.scheduleClockAlarm(
-            id,
+            alarm.copy(id = id),
             AlarmRepeatUtils.nextTriggerMillis(hour, minute, repeatDaysMask),
         )
         ClockWidget.updateAll(appContext)
@@ -72,7 +72,7 @@ class AlarmRepository private constructor(context: Context) {
         dao.update(updated)
         if (updated.enabled) {
             scheduler.scheduleClockAlarm(
-                id,
+                updated,
                 AlarmRepeatUtils.nextTriggerMillis(hour, minute, repeatDaysMask),
             )
         }
@@ -82,10 +82,11 @@ class AlarmRepository private constructor(context: Context) {
 
     suspend fun setEnabled(id: Long, enabled: Boolean) {
         val alarm = dao.getById(id) ?: return
-        dao.update(alarm.copy(enabled = enabled))
+        val updated = alarm.copy(enabled = enabled)
+        dao.update(updated)
         if (enabled) {
             scheduler.scheduleClockAlarm(
-                id,
+                updated,
                 AlarmRepeatUtils.nextTriggerMillis(alarm.hour, alarm.minute, alarm.repeatDaysMask),
             )
         } else {
@@ -95,11 +96,19 @@ class AlarmRepository private constructor(context: Context) {
         ClockWidget.updateAll(appContext)
     }
 
+    /** Desactiva una alarma de una sola vez tras dispararse, sin detener la alerta recién iniciada. */
+    suspend fun markTriggeredOneShot(id: Long) {
+        val alarm = dao.getById(id) ?: return
+        if (!alarm.enabled) return
+        dao.update(alarm.copy(enabled = false))
+        ClockWidget.updateAll(appContext)
+    }
+
     suspend fun rescheduleSingle(id: Long) {
         val alarm = dao.getById(id) ?: return
         if (!alarm.enabled) return
         scheduler.scheduleClockAlarm(
-            id,
+            alarm,
             AlarmRepeatUtils.nextTriggerMillis(alarm.hour, alarm.minute, alarm.repeatDaysMask),
         )
         ClockWidget.updateAll(appContext)
@@ -117,7 +126,7 @@ class AlarmRepository private constructor(context: Context) {
         for (alarm in dao.getAll()) {
             if (alarm.enabled) {
                 scheduler.scheduleClockAlarm(
-                    alarm.id,
+                    alarm,
                     AlarmRepeatUtils.nextTriggerMillis(alarm.hour, alarm.minute, alarm.repeatDaysMask),
                 )
             }

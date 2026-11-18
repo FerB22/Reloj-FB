@@ -74,8 +74,9 @@ object NotificationHelper {
     }
 
     /**
-     * Sincroniza las notificaciones persistentes con cronómetro descendente de todos
-     * los temporizadores actualmente en ejecución y cancela las que ya no correspondan.
+     * Sincroniza las notificaciones persistentes de todos los temporizadores activos
+     * (en ejecución con cronómetro descendente y en pausa con botón de reanudar)
+     * y cancela las que ya no correspondan.
      */
     fun syncRunningTimerNotifications(
         context: Context,
@@ -91,17 +92,17 @@ object NotificationHelper {
 
         ensureAlertChannels(context)
         val manager = context.getSystemService(NotificationManager::class.java)
-        val runningTimers = timers.filter {
-            it.state == TimerState.RUNNING && (it.endAtMillis ?: 0L) > now
+        val activeTimers = timers.filter { timer ->
+            (timer.state == TimerState.RUNNING && (timer.endAtMillis ?: 0L) > now) ||
+                (timer.state == TimerState.PAUSED && (timer.remainingMillis ?: 0L) > 0L)
         }
-        val activeIds = runningTimers.map { it.id.toInt() }.toSet()
+        val activeIds = activeTimers.map { it.id.toInt() }.toSet()
 
         manager.activeNotifications
             .filter { it.tag == TAG_RUNNING_TIMER && it.id !in activeIds }
             .forEach { manager.cancel(TAG_RUNNING_TIMER, it.id) }
 
-        runningTimers.forEach { timer ->
-            val endAt = timer.endAtMillis ?: return@forEach
+        activeTimers.forEach { timer ->
             val openAppIntent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -109,24 +110,6 @@ object NotificationHelper {
                 context,
                 Objects.hash("open_timer", timer.id),
                 openAppIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
-            val pausePending = PendingIntent.getBroadcast(
-                context,
-                Objects.hash(TimerWidgetReceiver.ACTION_PAUSE, timer.id),
-                Intent(context, TimerWidgetReceiver::class.java)
-                    .setAction(TimerWidgetReceiver.ACTION_PAUSE)
-                    .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
-            val addMinutePending = PendingIntent.getBroadcast(
-                context,
-                Objects.hash(TimerWidgetReceiver.ACTION_ADD_MINUTE, timer.id),
-                Intent(context, TimerWidgetReceiver::class.java)
-                    .setAction(TimerWidgetReceiver.ACTION_ADD_MINUTE)
-                    .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
@@ -139,14 +122,9 @@ object NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-            val notification = NotificationCompat.Builder(context, TIMERS_RUNNING_CHANNEL_ID)
+            val builder = NotificationCompat.Builder(context, TIMERS_RUNNING_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle(timer.label.ifBlank { "Temporizador" })
-                .setContentText("Temporizador en curso")
-                .setWhen(endAt)
-                .setShowWhen(true)
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setOnlyAlertOnce(true)
@@ -156,11 +134,74 @@ object NotificationHelper {
                 .setGroup("reloj_running_timers")
                 .setContentIntent(openAppPending)
                 .setDeleteIntent(repostPending)
-                .addAction(0, "Pausar", pausePending)
-                .addAction(0, "+1 min", addMinutePending)
-                .build()
 
-            manager.notify(TAG_RUNNING_TIMER, timer.id.toInt(), notification)
+            if (timer.state == TimerState.RUNNING) {
+                val endAt = timer.endAtMillis ?: return@forEach
+                val pausePending = PendingIntent.getBroadcast(
+                    context,
+                    Objects.hash(TimerWidgetReceiver.ACTION_PAUSE, timer.id),
+                    Intent(context, TimerWidgetReceiver::class.java)
+                        .setAction(TimerWidgetReceiver.ACTION_PAUSE)
+                        .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                val addMinutePending = PendingIntent.getBroadcast(
+                    context,
+                    Objects.hash(TimerWidgetReceiver.ACTION_ADD_MINUTE, timer.id),
+                    Intent(context, TimerWidgetReceiver::class.java)
+                        .setAction(TimerWidgetReceiver.ACTION_ADD_MINUTE)
+                        .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+                builder
+                    .setContentText("Temporizador en curso")
+                    .setWhen(endAt)
+                    .setShowWhen(true)
+                    .setUsesChronometer(true)
+                    .setChronometerCountDown(true)
+                    .addAction(0, "Pausar", pausePending)
+                    .addAction(0, "+1 min", addMinutePending)
+            } else {
+                val remaining = (timer.remainingMillis ?: 0L).coerceAtLeast(0L)
+                val resumePending = PendingIntent.getBroadcast(
+                    context,
+                    Objects.hash(TimerWidgetReceiver.ACTION_START, timer.id),
+                    Intent(context, TimerWidgetReceiver::class.java)
+                        .setAction(TimerWidgetReceiver.ACTION_START)
+                        .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                val resetPending = PendingIntent.getBroadcast(
+                    context,
+                    Objects.hash(TimerWidgetReceiver.ACTION_RESET, timer.id),
+                    Intent(context, TimerWidgetReceiver::class.java)
+                        .setAction(TimerWidgetReceiver.ACTION_RESET)
+                        .putExtra(TimerWidgetReceiver.EXTRA_TIMER_ID, timer.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+                builder
+                    .setContentText("En pausa · ${formatRemainingClock(remaining)}")
+                    .setShowWhen(false)
+                    .setUsesChronometer(false)
+                    .addAction(0, "Reanudar", resumePending)
+                    .addAction(0, "Reiniciar", resetPending)
+            }
+
+            manager.notify(TAG_RUNNING_TIMER, timer.id.toInt(), builder.build())
+        }
+    }
+
+    private fun formatRemainingClock(millis: Long): String {
+        val totalSeconds = (millis + 999L) / 1_000L
+        val hours = totalSeconds / 3_600L
+        val minutes = (totalSeconds % 3_600L) / 60L
+        val seconds = totalSeconds % 60L
+        return if (hours > 0L) {
+            "%d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
         }
     }
 

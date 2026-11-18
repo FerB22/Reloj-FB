@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -109,6 +110,7 @@ fun SettingsScreen(
     var exactAlarmsGranted by remember { mutableStateOf(canScheduleExactAlarms(context)) }
     var fullScreenGranted by remember { mutableStateOf(NotificationHelper.canUseFullScreenIntent(context)) }
     var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var batteryUnrestricted by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
     var activeIcon by remember { mutableStateOf(AppIconManager.getSelectedIcon(context)) }
     var hasPendingIconChange by remember { mutableStateOf(AppIconManager.hasPendingChange(context)) }
 
@@ -125,6 +127,7 @@ fun SettingsScreen(
                 exactAlarmsGranted = canScheduleExactAlarms(context)
                 fullScreenGranted = NotificationHelper.canUseFullScreenIntent(context)
                 overlayGranted = Settings.canDrawOverlays(context)
+                batteryUnrestricted = isIgnoringBatteryOptimizations(context)
                 activeIcon = AppIconManager.getSelectedIcon(context)
                 hasPendingIconChange = AppIconManager.hasPendingChange(context)
             }
@@ -711,6 +714,30 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     },
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(colors.outline),
+                )
+                PermissionRow(
+                    title = "Sin restricciones de batería",
+                    subtitle = "Evita que el sistema suspenda las alarmas con la pantalla apagada",
+                    granted = batteryUnrestricted,
+                    onClick = {
+                        runCatching {
+                            val intent = Intent(
+                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                Uri.parse("package:${context.packageName}"),
+                            )
+                            context.startActivity(intent)
+                        }.onFailure {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                            }
+                        }
+                    },
+                )
             }
         }
 
@@ -935,3 +962,6 @@ private fun hasNotificationPermission(context: android.content.Context): Boolean
 private fun canScheduleExactAlarms(context: android.content.Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+
+private fun isIgnoringBatteryOptimizations(context: android.content.Context): Boolean =
+    context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) == true

@@ -86,14 +86,13 @@ class TimerRepository private constructor(context: Context) {
         val timer = dao.getById(id) ?: return
         val remaining = timer.remainingMillis ?: timer.durationMillis
         val endAt = now + remaining
-        dao.update(
-            timer.copy(
-                state = TimerState.RUNNING,
-                endAtMillis = endAt,
-                remainingMillis = null,
-            ),
+        val updated = timer.copy(
+            state = TimerState.RUNNING,
+            endAtMillis = endAt,
+            remainingMillis = null,
         )
-        scheduler.schedule(id, endAt)
+        dao.update(updated)
+        scheduler.schedule(updated, endAt)
         syncNotifications(now)
     }
 
@@ -124,14 +123,13 @@ class TimerRepository private constructor(context: Context) {
     suspend fun extendSnooze(id: Long, extraMillis: Long = 60_000L, now: Long = System.currentTimeMillis()) {
         val timer = dao.getById(id) ?: return
         val endAt = now + extraMillis
-        dao.update(
-            timer.copy(
-                state = TimerState.RUNNING,
-                endAtMillis = endAt,
-                remainingMillis = null,
-            ),
+        val updated = timer.copy(
+            state = TimerState.RUNNING,
+            endAtMillis = endAt,
+            remainingMillis = null,
         )
-        scheduler.schedule(id, endAt)
+        dao.update(updated)
+        scheduler.schedule(updated, endAt)
         syncNotifications(now)
     }
 
@@ -141,13 +139,15 @@ class TimerRepository private constructor(context: Context) {
             TimerState.RUNNING -> {
                 val baseEnd = maxOf(timer.endAtMillis ?: now, now)
                 val newEnd = baseEnd + extraMillis
-                dao.update(timer.copy(endAtMillis = newEnd))
-                scheduler.schedule(id, newEnd)
+                val updated = timer.copy(endAtMillis = newEnd)
+                dao.update(updated)
+                scheduler.schedule(updated, newEnd)
                 syncNotifications(now)
             }
             TimerState.PAUSED -> {
                 val newRemaining = (timer.remainingMillis ?: timer.durationMillis) + extraMillis
                 dao.update(timer.copy(remainingMillis = newRemaining))
+                syncNotifications(now)
             }
             else -> Unit
         }
@@ -161,12 +161,12 @@ class TimerRepository private constructor(context: Context) {
         syncNotifications()
     }
 
-    /** Reprograma las alarmas tras reiniciar el teléfono. */
+    /** Reprograma las alarmas tras reiniciar el teléfono o actualizar la app. */
     suspend fun rescheduleRunning(now: Long = System.currentTimeMillis()) {
         for (timer in dao.getAll()) {
             val endAt = timer.endAtMillis ?: continue
             if (timer.state != TimerState.RUNNING) continue
-            if (endAt <= now) markFinished(timer.id) else scheduler.schedule(timer.id, endAt)
+            if (endAt <= now) markFinished(timer.id) else scheduler.schedule(timer, endAt)
         }
         syncNotifications(now)
     }
