@@ -7,7 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.audiofx.LoudnessEnhancer
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -36,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.roundToInt
 
 data class ActiveAlertState(
     val isAlarm: Boolean,
@@ -50,6 +54,9 @@ class AlarmAlertService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var mediaPlayer: MediaPlayer? = null
+    private var loudnessEnhancer: LoudnessEnhancer? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
+    private var previousAlarmVolume: Int? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var screenWakeLock: PowerManager.WakeLock? = null
     private var floatingBanner: TimerFloatingBanner? = null
@@ -165,7 +172,7 @@ class AlarmAlertService : Service() {
 
         val pm = getSystemService(PowerManager::class.java)
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Reloj:AlertWakeLock").apply {
-            acquire(6 * 60_000L)
+            acquire(11 * 60_000L)
         }
         if (useFullScreen) {
             @Suppress("DEPRECATION")
@@ -202,16 +209,17 @@ class AlarmAlertService : Service() {
         }
 
         val soundSettings = SoundPreferences.get(this).settings.value
+        val intenseMode = soundSettings.intenseWakeMode
         if (!source.isSilent) {
-            val useGradual = state.isAlarm && soundSettings.gradualVolume
-            startMediaPlayer(source, useGradual)
+            val useGradual = state.isAlarm && soundSettings.gradualVolume && !intenseMode
+            startMediaPlayer(source, useGradual, intenseMode)
         }
 
         if (source.isSilent || soundSettings.vibrateEnabled) {
-            startVibration(state.isAlarm)
+            startVibration(state.isAlarm, intenseMode)
         }
 
-        val maxMillis = if (state.isAlarm) 5 * 60_000L else 2 * 60_000L
+        val maxMillis = 10 * 60_000L
         timeoutJob = serviceScope.launch {
             delay(maxMillis)
             stopAlertAndSelf()
@@ -230,11 +238,38 @@ class AlarmAlertService : Service() {
         runCatching { startActivity(alertIntent) }
     }
 
-    private fun startMediaPlayer(source: ResolvedAudio, gradualVolume: Boolean) {
+    private fun startMediaPlayer(
+        source: ResolvedAudio,
+        gradualVolume: Boolean,
+        intenseWakeMode: Boolean,
+    ) {
         val alarmAttrs = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
+
+        val audioManager = getSystemService(AudioManager::class.java)
+        runCatching {
+            val focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                .setAudioAttributes(alarmAttrs)
+                .setAcceptsDelayedFocusGain(false)
+                .setWillPauseWhenDucked(false)
+                .build()
+            audioManager.requestAudioFocus(focusReq)
+            audioFocusRequest = focusReq
+        }
+
+        if (intenseWakeMode) {
+            runCatching {
+                val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+                val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+                val targetVol = (maxVol * 0.90f).roundToInt().coerceIn(1, maxVol)
+                if (currentVol < targetVol) {
+                    previousAlarmVolume = currentVol
+                    audioManager.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
+                }
+            }
+        }
 
         val initialVol = if (gradualVolume) 0.15f else 1.0f
 
@@ -267,6 +302,15 @@ class AlarmAlertService : Service() {
 
         mediaPlayer = player
 
+        if (player != null && intenseWakeMode) {
+            loudnessEnhancer = runCatching {
+                LoudnessEnhancer(player.audioSessionId).apply {
+                    setTargetGain(600)
+                    enabled = true
+                }
+            }.getOrNull()
+        }
+
         if (player != null && gradualVolume) {
             volumeJob = serviceScope.launch {
                 val steps = 20
@@ -280,17 +324,14 @@ class AlarmAlertService : Service() {
         }
     }
 
-    private fun startVibration(isAlarm: Boolean) {
-        val timings = if (isAlarm) {
-            longArrayOf(0, 1400, 250, 1400, 250, 1400, 450)
-        } else {
-            longArrayOf(0, 800, 200, 800, 400)
+    private fun startVibration(isAlarm: Boolean, intenseWakeMode: Boolean) {
+        // Ráfagas rápidas combinadas con pulsos sostenidos a potencia máxima para evitar habituación.
+        val timings = when {
+            intenseWakeMode -> longArrayOf(0, 220, 90, 220, 90, 220, 120, 850, 150, 220, 90, 850, 220)
+            isAlarm -> longArrayOf(0, 300, 120, 300, 120, 1100, 250, 300, 120, 1100, 350)
+            else -> longArrayOf(0, 260, 100, 260, 100, 750, 220, 260, 100, 750, 300)
         }
-        val amplitudes = if (isAlarm) {
-            intArrayOf(0, 255, 0, 255, 0, 255, 0)
-        } else {
-            intArrayOf(0, 255, 0, 255, 0)
-        }
+        val amplitudes = IntArray(timings.size) { index -> if (index % 2 == 1) 255 else 0 }
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             getSystemService(VibratorManager::class.java).defaultVibrator
         } else {
@@ -326,6 +367,12 @@ class AlarmAlertService : Service() {
         timeoutJob?.cancel()
         timeoutJob = null
 
+        loudnessEnhancer?.let { enhancer ->
+            runCatching { enhancer.enabled = false }
+            runCatching { enhancer.release() }
+        }
+        loudnessEnhancer = null
+
         mediaPlayer?.let { mp ->
             runCatching {
                 if (mp.isPlaying) mp.stop()
@@ -333,6 +380,17 @@ class AlarmAlertService : Service() {
             runCatching { mp.release() }
         }
         mediaPlayer = null
+
+        val audioManager = getSystemService(AudioManager::class.java)
+        audioFocusRequest?.let { req ->
+            runCatching { audioManager.abandonAudioFocusRequest(req) }
+        }
+        audioFocusRequest = null
+
+        previousAlarmVolume?.let { prevVol ->
+            runCatching { audioManager.setStreamVolume(AudioManager.STREAM_ALARM, prevVol, 0) }
+        }
+        previousAlarmVolume = null
 
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             getSystemService(VibratorManager::class.java).defaultVibrator

@@ -14,11 +14,27 @@ class AlarmScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
     fun schedule(timer: TimerEntity, triggerAtMillis: Long) {
-        scheduleExactOrFallback(triggerAtMillis, timerPendingIntent(timer.id, timer))
+        val pending = timerPendingIntent(timer.id, timer)
+        runCatching {
+            alarmManager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(triggerAtMillis, buildShowTimersPendingIntent()),
+                pending,
+            )
+        }.onFailure {
+            scheduleExactOrFallback(triggerAtMillis, pending)
+        }
     }
 
     fun schedule(timerId: Long, triggerAtMillis: Long) {
-        scheduleExactOrFallback(triggerAtMillis, timerPendingIntent(timerId, timer = null))
+        val pending = timerPendingIntent(timerId, timer = null)
+        runCatching {
+            alarmManager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(triggerAtMillis, buildShowTimersPendingIntent()),
+                pending,
+            )
+        }.onFailure {
+            scheduleExactOrFallback(triggerAtMillis, pending)
+        }
     }
 
     fun cancel(timerId: Long) {
@@ -71,6 +87,17 @@ class AlarmScheduler(private val context: Context) {
         return PendingIntent.getActivity(
             context,
             0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun buildShowTimersPendingIntent(): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        return PendingIntent.getActivity(
+            context,
+            1,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

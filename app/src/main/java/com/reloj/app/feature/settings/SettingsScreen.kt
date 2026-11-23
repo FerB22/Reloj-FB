@@ -567,6 +567,23 @@ fun SettingsScreen(
                 )
 
                 SettingSwitchRow(
+                    title = "Modo despertador intenso",
+                    subtitle = "Sube temporalmente el volumen al 90 %, refuerza el altavoz e intensifica la vibración",
+                    checked = soundSettings.intenseWakeMode,
+                    onCheckedChange = { enabled ->
+                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        soundPrefs.setIntenseWakeMode(enabled)
+                    },
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(colors.outline),
+                )
+
+                SettingSwitchRow(
                     title = "Botones de volumen al sonar",
                     subtitle = "Subir pospone · Bajar detiene la alarma",
                     checked = soundSettings.volumeButtonsEnabled,

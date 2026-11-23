@@ -31,6 +31,11 @@ enum class AlarmSoundPreset(
         description = "Repetición metálica rápida e inconfundible",
         rawResId = R.raw.sound_alarm_crystal,
     ),
+    INTENSE(
+        label = "Alarma penetrante",
+        description = "Ráfagas agudas tipo despertador de máxima presencia",
+        rawResId = R.raw.sound_alarm_intense,
+    ),
 }
 
 enum class TimerSoundPreset(
@@ -48,6 +53,11 @@ enum class TimerSoundPreset(
         description = "Secuencia aguda directa e intensa",
         rawResId = R.raw.sound_timer_pulse,
     ),
+    INTENSE(
+        label = "Sirena despertador",
+        description = "Dos tonos agudos urgentes para despertar",
+        rawResId = R.raw.sound_timer_intense,
+    ),
 }
 
 data class SoundSettings(
@@ -59,6 +69,7 @@ data class SoundSettings(
     val customTimerName: String? = null,
     val vibrateEnabled: Boolean = true,
     val gradualVolume: Boolean = false,
+    val intenseWakeMode: Boolean = false,
     val snoozeMinutes: Int = 5,
     val volumeButtonsEnabled: Boolean = true,
 )
@@ -84,6 +95,7 @@ class SoundPreferences private constructor(context: Context) {
             customTimerName = prefs.getString(KEY_CUSTOM_TIMER_NAME, null),
             vibrateEnabled = prefs.getBoolean(KEY_VIBRATE, true),
             gradualVolume = prefs.getBoolean(KEY_GRADUAL_VOLUME, false),
+            intenseWakeMode = prefs.getBoolean(KEY_INTENSE_WAKE_MODE, false),
             snoozeMinutes = prefs.getInt(KEY_SNOOZE_MINUTES, 5).takeIf { it in listOf(5, 10, 15) } ?: 5,
             volumeButtonsEnabled = prefs.getBoolean(KEY_VOLUME_BUTTONS, true),
         )
@@ -147,6 +159,11 @@ class SoundPreferences private constructor(context: Context) {
         _settings.value = _settings.value.copy(gradualVolume = enabled)
     }
 
+    fun setIntenseWakeMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_INTENSE_WAKE_MODE, enabled).apply()
+        _settings.value = _settings.value.copy(intenseWakeMode = enabled)
+    }
+
     fun setSnoozeMinutes(minutes: Int) {
         val clamped = minutes.takeIf { it in listOf(5, 10, 15) } ?: 5
         prefs.edit().putInt(KEY_SNOOZE_MINUTES, clamped).apply()
@@ -168,6 +185,7 @@ class SoundPreferences private constructor(context: Context) {
         private const val KEY_CUSTOM_TIMER_NAME = "custom_timer_name"
         private const val KEY_VIBRATE = "vibrate_enabled"
         private const val KEY_GRADUAL_VOLUME = "gradual_volume"
+        private const val KEY_INTENSE_WAKE_MODE = "intense_wake_mode"
         private const val KEY_SNOOZE_MINUTES = "snooze_minutes"
         private const val KEY_VOLUME_BUTTONS = "volume_buttons_enabled"
 
