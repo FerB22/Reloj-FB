@@ -1,8 +1,11 @@
 package com.reloj.app.core.data.local
 
+import android.app.Activity
 import android.app.LocaleManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
 import androidx.annotation.StringRes
@@ -42,11 +45,11 @@ object AppLocaleManager {
     }
 
     /**
-     * Aplica el idioma seleccionado. En Android 13+ usa LocaleManager nativo (que recrea
-     * las actividades automáticamente); en versiones anteriores persiste la preferencia
-     * y devuelve true para que la Activity pueda recrearse.
+     * Persiste el idioma elegido. En Android 13+ lo sincroniza con LocaleManager;
+     * gracias a configChanges="locale|layoutDirection" en MainActivity, Compose actualiza
+     * toda la interfaz en el mismo fotograma sin recrear ni parpadear la ventana.
      */
-    fun setLanguage(context: Context, language: AppLanguage): Boolean {
+    fun setLanguage(context: Context, language: AppLanguage) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_LANGUAGE, language.name)
@@ -59,9 +62,7 @@ object AppLocaleManager {
                 LocaleList.getEmptyLocaleList()
             }
             context.getSystemService(LocaleManager::class.java)?.applicationLocales = list
-            return false
         }
-        return true
     }
 
     fun wrapContext(base: Context): Context {
@@ -69,17 +70,36 @@ object AppLocaleManager {
         return localizedContext(base)
     }
 
-    fun localizedContext(base: Context): Context {
-        val language = getSelectedLanguage(base)
-        val tag = language.languageTag ?: return base
-        val locale = Locale.forLanguageTag(tag)
+    fun localizedContext(
+        base: Context,
+        language: AppLanguage = getSelectedLanguage(base),
+    ): Context {
+        val locale = resolveLocale(language)
         val config = Configuration(base.resources.configuration)
         config.setLocale(locale)
         return base.createConfigurationContext(config)
     }
 
+    /**
+     * Envuelve una Activity preservando startActivity() sin FLAG_ACTIVITY_NEW_TASK
+     * mientras entrega Resources localizados al idioma activo en Compose.
+     */
+    fun wrapActivityResources(activity: Activity, language: AppLanguage): Context {
+        val resContext = localizedContext(activity, language)
+        return object : ContextWrapper(activity) {
+            override fun getResources(): Resources = resContext.resources
+        }
+    }
+
     fun effectiveLocale(context: Context): Locale {
         val locales = context.resources.configuration.locales
         return if (!locales.isEmpty) locales.get(0) else Locale.getDefault()
+    }
+
+    private fun resolveLocale(language: AppLanguage): Locale {
+        val tag = language.languageTag
+        if (tag != null) return Locale.forLanguageTag(tag)
+        val systemLocales = Resources.getSystem().configuration.locales
+        return if (!systemLocales.isEmpty) systemLocales.get(0) else Locale.getDefault()
     }
 }

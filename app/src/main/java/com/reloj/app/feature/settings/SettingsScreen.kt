@@ -95,6 +95,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     appearance: AppearanceSettings,
+    selectedLanguage: AppLanguage,
     onThemeModeChange: (ThemeMode) -> Unit,
     onAccentChange: (AccentPreset) -> Unit,
     onTimeFormatChange: (Boolean) -> Unit,
@@ -116,7 +117,6 @@ fun SettingsScreen(
     var fullScreenGranted by remember { mutableStateOf(NotificationHelper.canUseFullScreenIntent(context)) }
     var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryUnrestricted by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
-    var selectedLanguage by remember { mutableStateOf(AppLocaleManager.getSelectedLanguage(context)) }
     var activeIcon by remember { mutableStateOf(AppIconManager.getSelectedIcon(context)) }
     var hasPendingIconChange by remember { mutableStateOf(AppIconManager.hasPendingChange(context)) }
 
@@ -134,7 +134,6 @@ fun SettingsScreen(
                 fullScreenGranted = NotificationHelper.canUseFullScreenIntent(context)
                 overlayGranted = Settings.canDrawOverlays(context)
                 batteryUnrestricted = isIgnoringBatteryOptimizations(context)
-                selectedLanguage = AppLocaleManager.getSelectedLanguage(context)
                 activeIcon = AppIconManager.getSelectedIcon(context)
                 hasPendingIconChange = AppIconManager.hasPendingChange(context)
             }
@@ -433,7 +432,6 @@ fun SettingsScreen(
                                     .clickable {
                                         if (!selected) {
                                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                            selectedLanguage = language
                                             onLanguageChange(language)
                                         }
                                     },

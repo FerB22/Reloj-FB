@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +49,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.annotation.StringRes
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -121,6 +124,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appearance by themePrefs.settings.collectAsState()
+            var selectedLanguage by remember { mutableStateOf(AppLocaleManager.getSelectedLanguage(this)) }
+            val localizedUiContext = remember(selectedLanguage) {
+                AppLocaleManager.wrapActivityResources(this@MainActivity, selectedLanguage)
+            }
             val systemDark = isSystemInDarkTheme()
             val resolvedDark = appearance.themeMode.isDark(systemDark)
             val resolvedScheme = remember(appearance.themeMode, systemDark, appearance.accent) {
@@ -141,6 +148,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            CompositionLocalProvider(
+                LocalContext provides localizedUiContext,
+                LocalConfiguration provides localizedUiContext.resources.configuration,
+            ) {
             RelojTheme(
                 themeMode = appearance.themeMode,
                 accent = appearance.accent,
@@ -229,6 +240,7 @@ class MainActivity : ComponentActivity() {
                                 )
                                 AppTab.SETTINGS -> SettingsScreen(
                                     appearance = appearance,
+                                    selectedLanguage = selectedLanguage,
                                     onThemeModeChange = { mode ->
                                         themePrefs.setThemeMode(mode)
                                         scope.launch {
@@ -256,14 +268,12 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onLanguageChange = { language ->
-                                        val needsRecreate = AppLocaleManager.setLanguage(this@MainActivity, language)
+                                        selectedLanguage = language
+                                        AppLocaleManager.setLanguage(this@MainActivity, language)
                                         scope.launch {
                                             TimerWidget.updateAll(this@MainActivity)
                                             ClockWidget.updateAll(this@MainActivity)
                                             timerRepo.syncNotifications()
-                                        }
-                                        if (needsRecreate) {
-                                            recreate()
                                         }
                                     },
                                 )
@@ -291,6 +301,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 }
+            }
             }
         }
     }
