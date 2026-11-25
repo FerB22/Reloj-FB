@@ -2,6 +2,7 @@ package com.reloj.app.core.data.local
 
 import android.content.Context
 import androidx.annotation.RawRes
+import androidx.annotation.StringRes
 import com.reloj.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,50 +13,50 @@ const val SILENT_SOUND_PRESET = "SILENT"
 fun isSilentSoundPreset(soundPreset: String?): Boolean = soundPreset == SILENT_SOUND_PRESET
 
 enum class AlarmSoundPreset(
-    val label: String,
-    val description: String,
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val descriptionRes: Int,
     @param:RawRes val rawResId: Int,
 ) {
     SUNRISE(
-        label = "Despertar intenso",
-        description = "Pulsos firmes y brillantes para despertar",
+        labelRes = R.string.sound_alarm_sunrise,
+        descriptionRes = R.string.sound_alarm_sunrise_desc,
         rawResId = R.raw.sound_alarm_sunrise,
     ),
     NORDIC(
-        label = "Sirena rítmica",
-        description = "Alternancia aguda de alta penetración",
+        labelRes = R.string.sound_alarm_nordic,
+        descriptionRes = R.string.sound_alarm_nordic_desc,
         rawResId = R.raw.sound_alarm_nordic,
     ),
     CRYSTAL(
-        label = "Timbre energético",
-        description = "Repetición metálica rápida e inconfundible",
+        labelRes = R.string.sound_alarm_crystal,
+        descriptionRes = R.string.sound_alarm_crystal_desc,
         rawResId = R.raw.sound_alarm_crystal,
     ),
     INTENSE(
-        label = "Alarma penetrante",
-        description = "Ráfagas agudas tipo despertador de máxima presencia",
+        labelRes = R.string.sound_alarm_intense,
+        descriptionRes = R.string.sound_alarm_intense_desc,
         rawResId = R.raw.sound_alarm_intense,
     ),
 }
 
 enum class TimerSoundPreset(
-    val label: String,
-    val description: String,
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val descriptionRes: Int,
     @param:RawRes val rawResId: Int,
 ) {
     CHIME(
-        label = "Aviso claro",
-        description = "Tres tonos ascendentes de alta presencia",
+        labelRes = R.string.sound_timer_chime,
+        descriptionRes = R.string.sound_timer_chime_desc,
         rawResId = R.raw.sound_timer_chime,
     ),
     PULSE(
-        label = "Bip rápido",
-        description = "Secuencia aguda directa e intensa",
+        labelRes = R.string.sound_timer_pulse,
+        descriptionRes = R.string.sound_timer_pulse_desc,
         rawResId = R.raw.sound_timer_pulse,
     ),
     INTENSE(
-        label = "Sirena despertador",
-        description = "Dos tonos agudos urgentes para despertar",
+        labelRes = R.string.sound_timer_intense,
+        descriptionRes = R.string.sound_timer_intense_desc,
         rawResId = R.raw.sound_timer_intense,
     ),
 }

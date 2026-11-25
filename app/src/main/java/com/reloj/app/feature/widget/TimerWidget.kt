@@ -17,6 +17,7 @@ import android.widget.RemoteViewsService
 import androidx.compose.ui.graphics.toArgb
 import com.reloj.app.MainActivity
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.data.local.TimerEntity
 import com.reloj.app.core.data.local.TimerState
@@ -73,10 +74,13 @@ object TimerWidget {
         timers: List<TimerEntity>,
         scheme: AppColorScheme,
     ): RemoteViews {
+        val localized = AppLocaleManager.localizedContext(context)
         val views = RemoteViews(context.packageName, R.layout.widget_timer_list)
         views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
+        views.setTextViewText(R.id.widget_title, localized.getString(R.string.widget_label))
         views.setTextColor(R.id.widget_title, scheme.textPrimary.toArgb())
         views.setInt(R.id.btn_open_app_bg, "setColorFilter", scheme.surface.toArgb())
+        views.setTextViewText(R.id.btn_open_app_text, localized.getString(R.string.widget_open_app))
         views.setTextColor(R.id.btn_open_app_text, scheme.textSecondary.toArgb())
         views.setOnClickPendingIntent(R.id.btn_open_app, openAppPendingIntent(context))
 
@@ -84,6 +88,7 @@ object TimerWidget {
             views.setViewVisibility(R.id.empty_container, View.VISIBLE)
             views.setViewVisibility(R.id.widget_list_view, View.GONE)
             views.setInt(R.id.empty_bg, "setColorFilter", scheme.surface.toArgb())
+            views.setTextViewText(R.id.empty_text, localized.getString(R.string.widget_empty_timers))
             views.setTextColor(R.id.empty_text, scheme.textSecondary.toArgb())
             views.setOnClickPendingIntent(R.id.empty_container, openAppPendingIntent(context))
         } else {
@@ -132,17 +137,19 @@ object TimerWidget {
         val isFinished = timer.state == TimerState.FINISHED ||
             (timer.state == TimerState.RUNNING && remaining == 0L)
 
+        val localized = AppLocaleManager.localizedContext(context)
         val statusText = when {
-            isFinished -> "Finalizado"
-            isRunning -> "En curso"
-            timer.state == TimerState.PAUSED -> "Pausado"
-            else -> "Listo"
+            isFinished -> localized.getString(R.string.timer_status_finished)
+            isRunning -> localized.getString(R.string.timer_status_running)
+            timer.state == TimerState.PAUSED -> localized.getString(R.string.timer_status_paused)
+            else -> localized.getString(R.string.timer_status_ready)
         }
 
         val views = RemoteViews(context.packageName, R.layout.widget_timer_focused)
         views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
 
         views.setInt(R.id.btn_back_bg, "setColorFilter", scheme.surface.toArgb())
+        views.setTextViewText(R.id.btn_back_text, localized.getString(R.string.widget_back_to_list))
         views.setTextColor(R.id.btn_back_text, scheme.textSecondary.toArgb())
         views.setOnClickPendingIntent(
             R.id.btn_back,
@@ -182,6 +189,7 @@ object TimerWidget {
         }
 
         views.setInt(R.id.btn_reset_bg, "setColorFilter", scheme.surfaceElevated.toArgb())
+        views.setTextViewText(R.id.btn_reset_text, localized.getString(R.string.action_reset))
         views.setTextColor(R.id.btn_reset_text, scheme.textPrimary.toArgb())
         views.setOnClickPendingIntent(
             R.id.btn_reset,
@@ -198,7 +206,10 @@ object TimerWidget {
         } else {
             views.setViewVisibility(R.id.btn_toggle, View.VISIBLE)
             views.setInt(R.id.btn_toggle_bg, "setColorFilter", scheme.accent.toArgb())
-            views.setTextViewText(R.id.btn_toggle_text, if (isRunning) "Pausar" else "Reanudar")
+            views.setTextViewText(
+                R.id.btn_toggle_text,
+                localized.getString(if (isRunning) R.string.action_pause else R.string.action_resume),
+            )
             views.setTextColor(R.id.btn_toggle_text, scheme.onAccent.toArgb())
             views.setOnClickPendingIntent(
                 R.id.btn_toggle,
@@ -416,6 +427,7 @@ private class TimerWidgetRemoteViewsFactory(
         val isFinished = timer.state == TimerState.FINISHED ||
             (timer.state == TimerState.RUNNING && remaining == 0L)
 
+        val localized = AppLocaleManager.localizedContext(context)
         val row = RemoteViews(context.packageName, R.layout.widget_timer_row)
         row.setInt(R.id.row_bg, "setColorFilter", scheme.surface.toArgb())
         row.setTextViewText(R.id.row_label, timer.label)
@@ -424,17 +436,17 @@ private class TimerWidgetRemoteViewsFactory(
         when {
             isFinished -> {
                 row.setViewVisibility(R.id.row_status, View.VISIBLE)
-                row.setTextViewText(R.id.row_status, "Finalizado")
+                row.setTextViewText(R.id.row_status, localized.getString(R.string.timer_status_finished))
                 row.setTextColor(R.id.row_status, scheme.accent.toArgb())
             }
             isRunning -> {
                 row.setViewVisibility(R.id.row_status, View.VISIBLE)
-                row.setTextViewText(R.id.row_status, "En curso")
+                row.setTextViewText(R.id.row_status, localized.getString(R.string.timer_status_running))
                 row.setTextColor(R.id.row_status, scheme.accent.toArgb())
             }
             timer.state == TimerState.PAUSED -> {
                 row.setViewVisibility(R.id.row_status, View.VISIBLE)
-                row.setTextViewText(R.id.row_status, "Pausado")
+                row.setTextViewText(R.id.row_status, localized.getString(R.string.timer_status_paused))
                 row.setTextColor(R.id.row_status, scheme.textSecondary.toArgb())
             }
             else -> {
@@ -461,7 +473,10 @@ private class TimerWidgetRemoteViewsFactory(
         }
 
         row.setInt(R.id.row_pill_bg, "setColorFilter", scheme.accent.toArgb())
-        row.setTextViewText(R.id.row_pill_text, if (isRunning) "Ver" else "▶")
+        row.setTextViewText(
+            R.id.row_pill_text,
+            if (isRunning) localized.getString(R.string.widget_view) else "▶",
+        )
         row.setTextColor(R.id.row_pill_text, scheme.onAccent.toArgb())
 
         val fillInIntent = Intent().apply {

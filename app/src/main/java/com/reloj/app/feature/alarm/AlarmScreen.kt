@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +58,7 @@ import java.util.Locale
 import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmEntity
 import com.reloj.app.core.data.local.AlarmRepeatUtils
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.CustomSoundManager
 import com.reloj.app.core.data.local.SILENT_SOUND_PRESET
 import com.reloj.app.core.data.local.isSilentSoundPreset
@@ -112,8 +114,8 @@ fun AlarmScreen(
             ?.minByOrNull { it.second }
             ?.let { (alarm, triggerMillis) ->
                 val time = AlarmRepeatUtils.formatAlarmTime(alarm.hour, alarm.minute, use24HourFormat)
-                val remaining = AlarmRepeatUtils.formatRemainingUntil(triggerMillis, nowMillis)
-                "Próxima · $time · $remaining"
+                val remaining = AlarmRepeatUtils.formatRemainingUntil(context, triggerMillis, nowMillis)
+                context.getString(R.string.alarm_next_summary, time, remaining)
             }
     }
 
@@ -128,7 +130,7 @@ fun AlarmScreen(
                 .padding(top = 16.dp),
         ) {
             Text(
-                text = "Alarmas",
+                text = stringResource(R.string.tab_alarms),
                 style = AppTypography.screenTitle,
                 color = colors.textPrimary,
                 textAlign = TextAlign.Center,
@@ -157,9 +159,9 @@ fun AlarmScreen(
                     ) {
                         EmptyStateCard(
                             iconRes = R.drawable.ic_alarm,
-                            title = "Sin alarmas configuradas",
-                            description = "Crea una alarma para programar tu próximo aviso.",
-                            actionText = "Añadir",
+                            title = stringResource(R.string.alarms_empty_title),
+                            description = stringResource(R.string.alarms_empty_desc),
+                            actionText = stringResource(R.string.action_add),
                             onAction = { showCreateDialog = true },
                         )
                     }
@@ -200,7 +202,7 @@ fun AlarmScreen(
 
         if (!alarms.isNullOrEmpty()) {
             PrimaryPillButton(
-                text = "Nuevo",
+                text = stringResource(R.string.action_new),
                 onClick = { showCreateDialog = true },
                 shadowElevation = 6.dp,
                 large = true,
@@ -273,9 +275,11 @@ private fun LiveClockHeader(
     nextAlarmText: String?,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val colors = AppTheme.colors
-    val spanishLocale = remember { Locale.forLanguageTag("es") }
-    val datePattern = remember(spanishLocale) { SimpleDateFormat("EEEE, d 'de' MMMM", spanishLocale) }
+    val activeLocale = remember(context) { AppLocaleManager.effectiveLocale(context) }
+    val datePatternStr = stringResource(R.string.date_pattern_full)
+    val datePattern = remember(activeLocale, datePatternStr) { SimpleDateFormat(datePatternStr, activeLocale) }
     val timePattern = remember(use24HourFormat) {
         SimpleDateFormat(if (use24HourFormat) "HH:mm" else "hh:mm", Locale.US)
     }
@@ -294,13 +298,13 @@ private fun LiveClockHeader(
     val periodText = remember(nowMillis, use24HourFormat) {
         if (use24HourFormat) null else periodPattern.format(nowDate).uppercase(Locale.US)
     }
-    val rawDateText = remember(nowMillis / 60_000L) {
+    val rawDateText = remember(nowMillis / 60_000L, activeLocale, datePatternStr) {
         datePattern.format(nowDate).replaceFirstChar { ch ->
-            if (ch.isLowerCase()) ch.titlecase(spanishLocale) else ch.toString()
+            if (ch.isLowerCase()) ch.titlecase(activeLocale) else ch.toString()
         }
     }
     val dateText = if (clockStyle == ClockWidgetStyle.TECH_MONO) {
-        rawDateText.uppercase(spanishLocale)
+        rawDateText.uppercase(activeLocale)
     } else {
         rawDateText
     }
@@ -772,9 +776,11 @@ private fun AlarmCard(
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
+    val context = LocalContext.current
     val colors = AppTheme.colors
-    val soundLabel = remember(alarm.soundPreset, alarm.customSoundPath, alarm.customSoundName) {
+    val soundLabel = remember(context, alarm.soundPreset, alarm.customSoundPath, alarm.customSoundName) {
         resolveSoundLabel(
+            context = context,
             isAlarm = true,
             soundPreset = alarm.soundPreset,
             customSoundPath = alarm.customSoundPath,
@@ -782,7 +788,7 @@ private fun AlarmCard(
         )
     }
     val timeText = AlarmRepeatUtils.formatAlarmTime(alarm.hour, alarm.minute, use24HourFormat)
-    val repeatSummary = AlarmRepeatUtils.formatRepeatSummary(alarm.repeatDaysMask)
+    val repeatSummary = AlarmRepeatUtils.formatRepeatSummary(context, alarm.repeatDaysMask)
     val remainingText = if (alarm.enabled) {
         val nextMillis = AlarmRepeatUtils.nextTriggerMillis(
             hour = alarm.hour,
@@ -790,7 +796,7 @@ private fun AlarmCard(
             repeatDaysMask = alarm.repeatDaysMask,
             nowMillis = nowMillis,
         )
-        AlarmRepeatUtils.formatRemainingUntil(nextMillis, nowMillis)
+        AlarmRepeatUtils.formatRemainingUntil(context, nextMillis, nowMillis)
     } else {
         null
     }
@@ -855,7 +861,7 @@ private fun AlarmCard(
                             border = BorderStroke(1.dp, colors.outline),
                         ) {
                             Text(
-                                text = "Sin sonido · Solo vibración",
+                                text = stringResource(R.string.sound_silent_badge),
                                 style = AppTypography.label,
                                 color = colors.textSecondary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -879,7 +885,7 @@ private fun AlarmCard(
                         onDelete()
                     },
                     onCancelConfirm = { confirmingDelete = false },
-                    contentDescription = "Eliminar alarma",
+                    contentDescription = stringResource(R.string.action_delete_alarm),
                     buttonSize = 38.dp,
                 )
             },
@@ -915,6 +921,7 @@ private fun AlarmEditorDialog(
         customName: String?,
     ) -> Unit,
 ) {
+    val context = LocalContext.current
     val colors = AppTheme.colors
     val view = LocalView.current
     var hour by remember(initial) { mutableIntStateOf(initial?.hour ?: 7) }
@@ -958,7 +965,9 @@ private fun AlarmEditorDialog(
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Text(
-                    text = if (initial == null) "Nueva alarma" else "Editar alarma",
+                    text = stringResource(
+                        if (initial == null) R.string.alarm_dialog_new else R.string.alarm_dialog_edit,
+                    ),
                     style = AppTypography.title,
                     color = colors.textPrimary,
                 )
@@ -969,7 +978,7 @@ private fun AlarmEditorDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     NumberStepper(
-                        title = "Hora",
+                        title = stringResource(R.string.unit_hour),
                         value = displayHour,
                         maxValue = if (use24HourFormat) 23 else 12,
                         onValueChange = { typed ->
@@ -1003,7 +1012,7 @@ private fun AlarmEditorDialog(
                         color = colors.textSecondary,
                     )
                     NumberStepper(
-                        title = "Minuto",
+                        title = stringResource(R.string.unit_minute),
                         value = minute,
                         maxValue = 59,
                         onValueChange = { minute = it },
@@ -1049,14 +1058,14 @@ private fun AlarmEditorDialog(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Repetir",
+                            text = stringResource(R.string.alarm_repeat),
                             style = AppTypography.title,
                             color = colors.textPrimary,
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf(
-                                "Lun-Vie" to AlarmRepeatUtils.MASK_WEEKDAYS,
-                                "Todos" to AlarmRepeatUtils.MASK_EVERYDAY,
+                                stringResource(R.string.alarm_repeat_weekdays_chip) to AlarmRepeatUtils.MASK_WEEKDAYS,
+                                stringResource(R.string.alarm_repeat_all_chip) to AlarmRepeatUtils.MASK_EVERYDAY,
                             ).forEach { (presetLabel, presetMask) ->
                                 val active = repeatDaysMask == presetMask
                                 Surface(
@@ -1085,7 +1094,7 @@ private fun AlarmEditorDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        AlarmRepeatUtils.DAY_SHORT_LETTERS.forEachIndexed { idx, letter ->
+                        AlarmRepeatUtils.DAY_SHORT_LETTER_RES.forEachIndexed { idx, letterRes ->
                             val selected = AlarmRepeatUtils.hasDay(repeatDaysMask, idx)
                             Surface(
                                 modifier = Modifier
@@ -1101,7 +1110,7 @@ private fun AlarmEditorDialog(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
-                                        text = letter,
+                                        text = stringResource(letterRes),
                                         style = AppTypography.label,
                                         color = if (selected) colors.onAccent else colors.textSecondary,
                                     )
@@ -1112,7 +1121,7 @@ private fun AlarmEditorDialog(
 
                     val previewNext = AlarmRepeatUtils.nextTriggerMillis(hour, minute, repeatDaysMask)
                     Text(
-                        text = "${AlarmRepeatUtils.formatRepeatSummary(repeatDaysMask)} · ${AlarmRepeatUtils.formatRemainingUntil(previewNext)}",
+                        text = "${AlarmRepeatUtils.formatRepeatSummary(context, repeatDaysMask)} · ${AlarmRepeatUtils.formatRemainingUntil(context, previewNext)}",
                         style = AppTypography.label,
                         color = colors.accent,
                     )
@@ -1127,7 +1136,7 @@ private fun AlarmEditorDialog(
                     Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         if (label.isEmpty()) {
                             Text(
-                                text = "Etiqueta (opcional, ej. Despertar)",
+                                text = stringResource(R.string.alarm_label_hint),
                                 style = AppTypography.body,
                                 color = colors.textSecondary,
                             )
@@ -1204,7 +1213,7 @@ private fun AlarmEditorDialog(
                         color = colors.surfaceElevated,
                     ) {
                         Text(
-                            text = "Cancelar",
+                            text = stringResource(R.string.action_cancel),
                             style = AppTypography.label,
                             color = colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -1229,7 +1238,7 @@ private fun AlarmEditorDialog(
                         color = colors.accent,
                     ) {
                         Text(
-                            text = "Guardar",
+                            text = stringResource(R.string.action_save),
                             style = AppTypography.label,
                             color = colors.onAccent,
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),

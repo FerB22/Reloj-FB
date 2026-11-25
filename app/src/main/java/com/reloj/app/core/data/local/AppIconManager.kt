@@ -3,10 +3,12 @@ package com.reloj.app.core.data.local
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
+import com.reloj.app.R
 
 enum class AppIconPreset(
-    val label: String,
+    @param:StringRes val labelRes: Int,
     val aliasClassName: String,
     val bgColor: Color,
     val ringColor: Color,
@@ -14,7 +16,7 @@ enum class AppIconPreset(
     val isDefault: Boolean = false
 ) {
     CARBON_AMBER(
-        label = "Carbón y ámbar",
+        labelRes = R.string.icon_carbon_amber,
         aliasClassName = "com.reloj.app.LauncherCarbonAmber",
         bgColor = Color(0xFF121316),
         ringColor = Color(0xFFE8A33D),
@@ -22,63 +24,63 @@ enum class AppIconPreset(
         isDefault = true
     ),
     BEIGE_CARBON(
-        label = "Beige y carbón",
+        labelRes = R.string.icon_beige_carbon,
         aliasClassName = "com.reloj.app.LauncherBeigeCarbon",
         bgColor = Color(0xFFF6F3EB),
         ringColor = Color(0xFFB86E00),
         handsColor = Color(0xFF1C1B1A)
     ),
     NIGHT_TERRACOTTA(
-        label = "Noche y terracota",
+        labelRes = R.string.icon_night_terracotta,
         aliasClassName = "com.reloj.app.LauncherNightTerracotta",
         bgColor = Color(0xFF181414),
         ringColor = Color(0xFFE07A5F),
         handsColor = Color(0xFFF4EDE4)
     ),
     FOREST_SAGE(
-        label = "Bosque y salvia",
+        labelRes = R.string.icon_forest_sage,
         aliasClassName = "com.reloj.app.LauncherForestSage",
         bgColor = Color(0xFF14221C),
         ringColor = Color(0xFF81B29A),
         handsColor = Color(0xFFEDF4EF)
     ),
     SAPPHIRE_ICE(
-        label = "Zafiro y hielo",
+        labelRes = R.string.icon_sapphire_ice,
         aliasClassName = "com.reloj.app.LauncherSapphireIce",
         bgColor = Color(0xFF101A2B),
         ringColor = Color(0xFF7B9ACC),
         handsColor = Color(0xFFF0F4FA)
     ),
     BURGUNDY_GOLD(
-        label = "Burdeos y oro",
+        labelRes = R.string.icon_burgundy_gold,
         aliasClassName = "com.reloj.app.LauncherBurgundyGold",
         bgColor = Color(0xFF2A1219),
         ringColor = Color(0xFFE6B86A),
         handsColor = Color(0xFFFAF3E8)
     ),
     GRAPHITE_CORAL(
-        label = "Grafito y coral",
+        labelRes = R.string.icon_graphite_coral,
         aliasClassName = "com.reloj.app.LauncherGraphiteCoral",
         bgColor = Color(0xFF222428),
         ringColor = Color(0xFFFF6B5B),
         handsColor = Color(0xFFFFFFFF)
     ),
     COBALT_WHITE(
-        label = "Cobalto y blanco",
+        labelRes = R.string.icon_cobalt_white,
         aliasClassName = "com.reloj.app.LauncherCobaltWhite",
         bgColor = Color(0xFF1D4ED8),
         ringColor = Color(0xFF93C5FD),
         handsColor = Color(0xFFFFFFFF)
     ),
     TERRACOTTA_CREAM(
-        label = "Terracota y crema",
+        labelRes = R.string.icon_terracotta_cream,
         aliasClassName = "com.reloj.app.LauncherTerracottaCream",
         bgColor = Color(0xFFB84A32),
         ringColor = Color(0xFFF7D7C4),
         handsColor = Color(0xFFFFF8F3)
     ),
     MONO_LIGHT(
-        label = "Claro monocromo",
+        labelRes = R.string.icon_mono_light,
         aliasClassName = "com.reloj.app.LauncherMonoLight",
         bgColor = Color(0xFFEDEFEF),
         ringColor = Color(0xFF8B8F96),

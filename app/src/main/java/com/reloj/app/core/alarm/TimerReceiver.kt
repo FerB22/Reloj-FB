@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.repository.TimerRepository
 import com.reloj.app.feature.widget.TimerWidget
 import kotlinx.coroutines.CoroutineScope
@@ -28,15 +29,16 @@ class TimerReceiver : BroadcastReceiver() {
         }.getOrNull()
 
         var startedSynchronously = false
+        val localized = AppLocaleManager.localizedContext(context)
         if (hasPayload) {
             val title = intent.getStringExtra(EXTRA_LABEL)?.ifBlank { null }
-                ?: context.getString(R.string.timer_finished)
+                ?: localized.getString(R.string.timer_finished)
             AlarmAlertService.startAlert(
                 context = context,
                 isAlarm = false,
                 itemId = id,
                 title = title,
-                subtitle = context.getString(R.string.timer_finished),
+                subtitle = localized.getString(R.string.timer_finished),
                 soundPreset = intent.getStringExtra(EXTRA_SOUND_PRESET),
                 customPath = intent.getStringExtra(EXTRA_CUSTOM_PATH),
                 customName = intent.getStringExtra(EXTRA_CUSTOM_NAME),
@@ -51,13 +53,13 @@ class TimerReceiver : BroadcastReceiver() {
                 val timer = repo.getById(id)
 
                 if (!startedSynchronously) {
-                    val title = timer?.label?.ifBlank { null } ?: context.getString(R.string.timer_finished)
+                    val title = timer?.label?.ifBlank { null } ?: localized.getString(R.string.timer_finished)
                     AlarmAlertService.startAlert(
                         context = context,
                         isAlarm = false,
                         itemId = id,
                         title = title,
-                        subtitle = context.getString(R.string.timer_finished),
+                        subtitle = localized.getString(R.string.timer_finished),
                         soundPreset = timer?.soundPreset,
                         customPath = timer?.customSoundPath,
                         customName = timer?.customSoundName,

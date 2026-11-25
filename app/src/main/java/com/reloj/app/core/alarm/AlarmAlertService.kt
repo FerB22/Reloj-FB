@@ -22,6 +22,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmSoundPreset
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.SoundPreferences
 import com.reloj.app.core.data.local.SoundPreviewPlayer
 import com.reloj.app.core.data.local.TimerSoundPreset
@@ -92,9 +93,12 @@ class AlarmAlertService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_START -> {
+                val localized = AppLocaleManager.localizedContext(this)
                 val isAlarm = intent.getBooleanExtra(EXTRA_IS_ALARM, true)
                 val itemId = intent.getLongExtra(EXTRA_ITEM_ID, -1L)
-                val title = intent.getStringExtra(EXTRA_TITLE) ?: if (isAlarm) "Alarma" else "Temporizador"
+                val title = intent.getStringExtra(EXTRA_TITLE) ?: localized.getString(
+                    if (isAlarm) R.string.alarm_ringing else R.string.timer_channel_name,
+                )
                 val subtitle = intent.getStringExtra(EXTRA_SUBTITLE).orEmpty()
                 val soundPreset = intent.getStringExtra(EXTRA_SOUND_PRESET)
                 val customPath = intent.getStringExtra(EXTRA_CUSTOM_PATH)
@@ -432,6 +436,7 @@ class AlarmAlertService : Service() {
         itemCustomPath: String?,
         itemCustomName: String?,
     ): ResolvedAudio {
+        val localized = AppLocaleManager.localizedContext(this)
         val prefs = SoundPreferences.get(this).settings.value
         val defaultRaw = if (isAlarm) prefs.alarmSound.rawResId else prefs.timerSound.rawResId
 
@@ -439,7 +444,7 @@ class AlarmAlertService : Service() {
             return ResolvedAudio(
                 filePath = null,
                 fallbackRawRes = defaultRaw,
-                displayLabel = "Solo vibración",
+                displayLabel = localized.getString(R.string.sound_vibration_only),
                 isSilent = true,
             )
         }
@@ -449,7 +454,8 @@ class AlarmAlertService : Service() {
             return ResolvedAudio(
                 filePath = itemCustomPath,
                 fallbackRawRes = defaultRaw,
-                displayLabel = itemCustomName?.ifBlank { null } ?: "Audio personalizado",
+                displayLabel = itemCustomName?.ifBlank { null }
+                    ?: localized.getString(R.string.sound_custom_audio),
             )
         }
 
@@ -457,11 +463,11 @@ class AlarmAlertService : Service() {
         if (!itemPreset.isNullOrBlank()) {
             if (isAlarm) {
                 AlarmSoundPreset.entries.firstOrNull { it.name == itemPreset }?.let { preset ->
-                    return ResolvedAudio(null, preset.rawResId, preset.label)
+                    return ResolvedAudio(null, preset.rawResId, localized.getString(preset.labelRes))
                 }
             } else {
                 TimerSoundPreset.entries.firstOrNull { it.name == itemPreset }?.let { preset ->
-                    return ResolvedAudio(null, preset.rawResId, preset.label)
+                    return ResolvedAudio(null, preset.rawResId, localized.getString(preset.labelRes))
                 }
             }
         }
@@ -473,12 +479,15 @@ class AlarmAlertService : Service() {
             return ResolvedAudio(
                 filePath = globalCustomPath,
                 fallbackRawRes = defaultRaw,
-                displayLabel = globalCustomName?.ifBlank { null } ?: "Audio personalizado",
+                displayLabel = globalCustomName?.ifBlank { null }
+                    ?: localized.getString(R.string.sound_custom_audio),
             )
         }
 
         // 4. Tono integrado configurado en Ajustes
-        val label = if (isAlarm) prefs.alarmSound.label else prefs.timerSound.label
+        val label = localized.getString(
+            if (isAlarm) prefs.alarmSound.labelRes else prefs.timerSound.labelRes,
+        )
         val raw = if (isAlarm) prefs.alarmSound.rawResId else prefs.timerSound.rawResId
         return ResolvedAudio(null, raw, label)
     }

@@ -1,5 +1,6 @@
 package com.reloj.app.core.alarm
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
@@ -45,9 +46,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.SoundPreferences
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.designsystem.AppTheme
@@ -55,6 +58,10 @@ import com.reloj.app.core.designsystem.AppTypography
 import com.reloj.app.core.designsystem.RelojTheme
 
 class AlertActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val soundSettings = SoundPreferences.get(this).settings.value
@@ -152,7 +159,9 @@ class AlertActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = if (active.isAlarm) "ALARMA" else "TEMPORIZADOR",
+                        text = stringResource(
+                            if (active.isAlarm) R.string.alert_badge_alarm else R.string.alert_badge_timer,
+                        ),
                         style = AppTypography.sectionTitle,
                         color = colors.accent,
                     )
@@ -213,7 +222,7 @@ class AlertActivity : ComponentActivity() {
                         ) {
                             Text(
                                 text = if (active.isSilent) {
-                                    "Sin sonido · ${active.soundLabel}"
+                                    stringResource(R.string.alert_silent_format, active.soundLabel)
                                 } else {
                                     "♪ ${active.soundLabel}"
                                 },
@@ -243,7 +252,7 @@ class AlertActivity : ComponentActivity() {
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "Detener",
+                                    text = stringResource(R.string.alert_stop),
                                     style = AppTypography.title,
                                     color = colors.onAccent,
                                 )
@@ -267,9 +276,9 @@ class AlertActivity : ComponentActivity() {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = if (active.isAlarm) {
-                                        "Posponer ${soundSettings.snoozeMinutes} min"
+                                        stringResource(R.string.alert_snooze_minutes, soundSettings.snoozeMinutes)
                                     } else {
-                                        "+1 min"
+                                        stringResource(R.string.alert_add_minute)
                                     },
                                     style = AppTypography.title,
                                     color = colors.textPrimary,
@@ -279,7 +288,7 @@ class AlertActivity : ComponentActivity() {
 
                         if (soundSettings.volumeButtonsEnabled) {
                             Text(
-                                text = "Subir volumen: posponer · Bajar volumen: detener",
+                                text = stringResource(R.string.alert_volume_hint),
                                 style = AppTypography.label,
                                 color = colors.textSecondary,
                                 textAlign = TextAlign.Center,

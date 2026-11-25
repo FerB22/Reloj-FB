@@ -64,16 +64,20 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.reloj.app.R
 import com.reloj.app.core.alarm.NotificationHelper
 import com.reloj.app.core.data.local.AlarmSoundPreset
 import com.reloj.app.core.data.local.AppIconManager
 import com.reloj.app.core.data.local.AppIconPreset
+import com.reloj.app.core.data.local.AppLanguage
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.AppearanceSettings
 import com.reloj.app.core.data.local.CustomSoundManager
 import com.reloj.app.core.data.local.SoundPreferences
@@ -95,6 +99,7 @@ fun SettingsScreen(
     onAccentChange: (AccentPreset) -> Unit,
     onTimeFormatChange: (Boolean) -> Unit,
     onClockWidgetStyleChange: (ClockWidgetStyle) -> Unit,
+    onLanguageChange: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
@@ -111,6 +116,7 @@ fun SettingsScreen(
     var fullScreenGranted by remember { mutableStateOf(NotificationHelper.canUseFullScreenIntent(context)) }
     var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryUnrestricted by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
+    var selectedLanguage by remember { mutableStateOf(AppLocaleManager.getSelectedLanguage(context)) }
     var activeIcon by remember { mutableStateOf(AppIconManager.getSelectedIcon(context)) }
     var hasPendingIconChange by remember { mutableStateOf(AppIconManager.hasPendingChange(context)) }
 
@@ -128,6 +134,7 @@ fun SettingsScreen(
                 fullScreenGranted = NotificationHelper.canUseFullScreenIntent(context)
                 overlayGranted = Settings.canDrawOverlays(context)
                 batteryUnrestricted = isIgnoringBatteryOptimizations(context)
+                selectedLanguage = AppLocaleManager.getSelectedLanguage(context)
                 activeIcon = AppIconManager.getSelectedIcon(context)
                 hasPendingIconChange = AppIconManager.hasPendingChange(context)
             }
@@ -148,14 +155,14 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = "Ajustes",
+            text = stringResource(R.string.tab_settings),
             style = AppTypography.screenTitle,
             color = colors.textPrimary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        SectionHeader("APARIENCIA")
+        SectionHeader(stringResource(R.string.settings_section_appearance))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -170,7 +177,7 @@ fun SettingsScreen(
                 val systemDark = isSystemInDarkTheme()
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Tema de fondo",
+                        text = stringResource(R.string.settings_theme_title),
                         style = AppTypography.title,
                         color = colors.textPrimary,
                     )
@@ -211,7 +218,7 @@ fun SettingsScreen(
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             Text(
-                                                text = mode.label,
+                                                text = stringResource(mode.labelRes),
                                                 style = AppTypography.label,
                                                 color = previewScheme.textPrimary,
                                             )
@@ -239,7 +246,7 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "Color de acento",
+                                text = stringResource(R.string.settings_accent_title),
                                 style = AppTypography.title,
                                 color = colors.textPrimary,
                             )
@@ -262,7 +269,7 @@ fun SettingsScreen(
                                         .background(colors.accent),
                                 )
                                 Text(
-                                    text = appearance.accent.label,
+                                    text = stringResource(appearance.accent.labelRes),
                                     style = AppTypography.label,
                                     color = colors.accent,
                                 )
@@ -354,18 +361,27 @@ fun SettingsScreen(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "Formato horario",
+                            text = stringResource(R.string.settings_time_format_title),
                             style = AppTypography.title,
                             color = colors.textPrimary,
                         )
                         Text(
-                            text = if (appearance.use24HourFormat) "24 h (19:30)" else "12 h (7:30 PM)",
+                            text = stringResource(
+                                if (appearance.use24HourFormat) {
+                                    R.string.settings_time_format_24h_example
+                                } else {
+                                    R.string.settings_time_format_12h_example
+                                },
+                            ),
                             style = AppTypography.label,
                             color = colors.textSecondary,
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("24 h" to true, "12 h" to false).forEach { (fmtLabel, is24h) ->
+                        listOf(
+                            stringResource(R.string.settings_time_format_24h) to true,
+                            stringResource(R.string.settings_time_format_12h) to false,
+                        ).forEach { (fmtLabel, is24h) ->
                             val selected = appearance.use24HourFormat == is24h
                             Surface(
                                 modifier = Modifier
@@ -390,10 +406,59 @@ fun SettingsScreen(
                         }
                     }
                 }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(colors.outline),
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_language_title),
+                        style = AppTypography.title,
+                        color = colors.textPrimary,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        AppLanguage.entries.forEach { language ->
+                            val selected = selectedLanguage == language
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        if (!selected) {
+                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            selectedLanguage = language
+                                            onLanguageChange(language)
+                                        }
+                                    },
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (selected) colors.accent else colors.surfaceElevated,
+                                border = if (selected) null else BorderStroke(1.dp, colors.outline),
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(vertical = 9.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = stringResource(language.labelRes),
+                                        style = AppTypography.label,
+                                        color = if (selected) colors.onAccent else colors.textSecondary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        SectionHeader("WIDGET DE RELOJ")
+        SectionHeader(stringResource(R.string.settings_section_clock_widget))
 
         ClockWidgetStyleCard(
             selectedStyle = appearance.clockWidgetStyle,
@@ -407,7 +472,7 @@ fun SettingsScreen(
             },
         )
 
-        SectionHeader("ICONO DE LA APLICACIÓN")
+        SectionHeader(stringResource(R.string.settings_section_app_icon))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -425,12 +490,12 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Estilo del icono",
+                        text = stringResource(R.string.settings_icon_style_title),
                         style = AppTypography.title,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = activeIcon.label,
+                        text = stringResource(activeIcon.labelRes),
                         style = AppTypography.label,
                         color = colors.accent,
                     )
@@ -462,18 +527,16 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    text = if (hasPendingIconChange) {
-                        "Icono seleccionado. Se aplicará automáticamente al salir de la aplicación."
-                    } else {
-                        "El cambio de icono se aplica al salir de la aplicación para no cerrarla."
-                    },
+                    text = stringResource(
+                        if (hasPendingIconChange) R.string.settings_icon_pending else R.string.settings_icon_note,
+                    ),
                     style = AppTypography.label,
                     color = if (hasPendingIconChange) colors.accent else colors.textSecondary,
                 )
             }
         }
 
-        SectionHeader("SONIDO Y ALERTAS")
+        SectionHeader(stringResource(R.string.settings_section_sound))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -486,7 +549,7 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 SoundPickerSection(
-                    title = "Tono de alarma",
+                    title = stringResource(R.string.settings_alarm_tone),
                     isAlarm = true,
                     includeDefaultOption = false,
                     selectedPreset = if (soundSettings.customAlarmPath != null) "CUSTOM" else soundSettings.alarmSound.name,
@@ -506,7 +569,7 @@ fun SettingsScreen(
                 )
 
                 SoundPickerSection(
-                    title = "Tono de temporizador",
+                    title = stringResource(R.string.settings_timer_tone),
                     isAlarm = false,
                     includeDefaultOption = false,
                     selectedPreset = if (soundSettings.customTimerPath != null) "CUSTOM" else soundSettings.timerSound.name,
@@ -533,8 +596,8 @@ fun SettingsScreen(
                 )
 
                 SettingSwitchRow(
-                    title = "Vibrar al sonar",
-                    subtitle = "Patrón diferenciado para alarmas y temporizadores",
+                    title = stringResource(R.string.settings_vibrate_title),
+                    subtitle = stringResource(R.string.settings_vibrate_subtitle),
                     checked = soundSettings.vibrateEnabled,
                     onCheckedChange = { enabled ->
                         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -550,8 +613,8 @@ fun SettingsScreen(
                 )
 
                 SettingSwitchRow(
-                    title = "Volumen gradual en alarmas",
-                    subtitle = "Sube de forma progresiva durante los primeros 6 s",
+                    title = stringResource(R.string.settings_gradual_title),
+                    subtitle = stringResource(R.string.settings_gradual_subtitle),
                     checked = soundSettings.gradualVolume,
                     onCheckedChange = { enabled ->
                         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -567,8 +630,8 @@ fun SettingsScreen(
                 )
 
                 SettingSwitchRow(
-                    title = "Modo despertador intenso",
-                    subtitle = "Sube temporalmente el volumen al 90 %, refuerza el altavoz e intensifica la vibración",
+                    title = stringResource(R.string.settings_intense_wake_title),
+                    subtitle = stringResource(R.string.settings_intense_wake_subtitle),
                     checked = soundSettings.intenseWakeMode,
                     onCheckedChange = { enabled ->
                         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -584,8 +647,8 @@ fun SettingsScreen(
                 )
 
                 SettingSwitchRow(
-                    title = "Botones de volumen al sonar",
-                    subtitle = "Subir pospone · Bajar detiene la alarma",
+                    title = stringResource(R.string.settings_volume_buttons_title),
+                    subtitle = stringResource(R.string.settings_volume_buttons_subtitle),
                     checked = soundSettings.volumeButtonsEnabled,
                     onCheckedChange = { enabled ->
                         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -612,12 +675,12 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
-                            text = "Duración de posponer",
+                            text = stringResource(R.string.settings_snooze_title),
                             style = AppTypography.title,
                             color = colors.textPrimary,
                         )
                         Text(
-                            text = "Tiempo añadido al posponer una alarma",
+                            text = stringResource(R.string.settings_snooze_subtitle),
                             style = AppTypography.label,
                             color = colors.textSecondary,
                         )
@@ -639,7 +702,7 @@ fun SettingsScreen(
                                 border = if (selected) null else BorderStroke(1.dp, colors.outline),
                             ) {
                                 Text(
-                                    text = "$mins min",
+                                    text = stringResource(R.string.settings_snooze_option, mins),
                                     style = AppTypography.label,
                                     color = if (selected) colors.onAccent else colors.textSecondary,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -651,7 +714,7 @@ fun SettingsScreen(
             }
         }
 
-        SectionHeader("PERMISOS DEL SISTEMA")
+        SectionHeader(stringResource(R.string.settings_section_permissions))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -664,8 +727,8 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 PermissionRow(
-                    title = "Notificaciones",
-                    subtitle = "Necesarias para avisar cuando termine un temporizador",
+                    title = stringResource(R.string.perm_notifications_title),
+                    subtitle = stringResource(R.string.perm_notifications_subtitle),
                     granted = notificationsGranted,
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -680,8 +743,8 @@ fun SettingsScreen(
                         .background(colors.outline),
                 )
                 PermissionRow(
-                    title = "Alarmas exactas",
-                    subtitle = "Garantiza precisión aunque la pantalla esté apagada",
+                    title = stringResource(R.string.perm_exact_alarms_title),
+                    subtitle = stringResource(R.string.perm_exact_alarms_subtitle),
                     granted = exactAlarmsGranted,
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -701,8 +764,8 @@ fun SettingsScreen(
                             .background(colors.outline),
                     )
                     PermissionRow(
-                        title = "Alertas con pantalla bloqueada",
-                        subtitle = "Permite mostrar Detener y Posponer al despertar el móvil",
+                        title = stringResource(R.string.perm_fullscreen_title),
+                        subtitle = stringResource(R.string.perm_fullscreen_subtitle),
                         granted = fullScreenGranted,
                         onClick = {
                             val intent = Intent(
@@ -720,8 +783,8 @@ fun SettingsScreen(
                         .background(colors.outline),
                 )
                 PermissionRow(
-                    title = "Mostrar sobre otras apps",
-                    subtitle = "Muestra el banner flotante personalizado al estar en otra aplicación",
+                    title = stringResource(R.string.perm_overlay_title),
+                    subtitle = stringResource(R.string.perm_overlay_subtitle),
                     granted = overlayGranted,
                     onClick = {
                         val intent = Intent(
@@ -738,8 +801,8 @@ fun SettingsScreen(
                         .background(colors.outline),
                 )
                 PermissionRow(
-                    title = "Sin restricciones de batería",
-                    subtitle = "Evita que el sistema suspenda las alarmas con la pantalla apagada",
+                    title = stringResource(R.string.perm_battery_title),
+                    subtitle = stringResource(R.string.perm_battery_subtitle),
                     granted = batteryUnrestricted,
                     onClick = {
                         runCatching {
@@ -960,7 +1023,7 @@ private fun PermissionRow(
             color = if (granted) colors.surfaceElevated else colors.accent,
         ) {
             Text(
-                text = if (granted) "Activo" else "Activar",
+                text = stringResource(if (granted) R.string.action_active else R.string.action_enable),
                 style = AppTypography.label,
                 color = if (granted) colors.textSecondary else colors.onAccent,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),

@@ -50,6 +50,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -118,7 +119,7 @@ fun TimerHomeScreen(
                 .padding(top = 16.dp),
         ) {
             Text(
-                text = "Temporizadores",
+                text = stringResource(R.string.tab_timers),
                 style = AppTypography.screenTitle,
                 color = colors.textPrimary,
                 textAlign = TextAlign.Center,
@@ -159,7 +160,7 @@ fun TimerHomeScreen(
                             .clickable {
                                 runAndSyncWidget {
                                     repository.create(
-                                        label = "$minutes min",
+                                        label = context.getString(R.string.timer_preset_label, minutes),
                                         durationMillis = minutes * 60_000L,
                                     )
                                 }
@@ -169,7 +170,7 @@ fun TimerHomeScreen(
                         border = BorderStroke(1.dp, colors.outline),
                     ) {
                         Text(
-                            text = "+ $minutes min",
+                            text = stringResource(R.string.timer_preset_chip, minutes),
                             style = AppTypography.label,
                             color = colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -190,9 +191,9 @@ fun TimerHomeScreen(
                     ) {
                         EmptyStateCard(
                             iconRes = R.drawable.ic_timer,
-                            title = "No hay temporizadores",
-                            description = "Añade un temporizador personalizado o usa un acceso rápido arriba.",
-                            actionText = "Añadir",
+                            title = stringResource(R.string.timers_empty_title),
+                            description = stringResource(R.string.timers_empty_desc),
+                            actionText = stringResource(R.string.action_add),
                             onAction = { showCreateDialog = true },
                         )
                     }
@@ -234,7 +235,7 @@ fun TimerHomeScreen(
 
         if (!timers.isNullOrEmpty()) {
             PrimaryPillButton(
-                text = "Nuevo",
+                text = stringResource(R.string.action_new),
                 onClick = { showCreateDialog = true },
                 shadowElevation = 6.dp,
                 large = true,
@@ -302,6 +303,7 @@ private fun TimerCard(
     onReset: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val context = LocalContext.current
     val colors = AppTheme.colors
     val displayMillis = when (timer.state) {
         TimerState.RUNNING -> ((timer.endAtMillis ?: nowMillis) - nowMillis).coerceAtLeast(0L)
@@ -315,14 +317,15 @@ private fun TimerCard(
         (timer.state == TimerState.RUNNING && displayMillis == 0L)
 
     val statusText = when {
-        isFinished -> "Finalizado"
-        isRunning -> "En curso"
-        timer.state == TimerState.PAUSED -> "Pausado"
-        else -> "Listo"
+        isFinished -> stringResource(R.string.timer_status_finished)
+        isRunning -> stringResource(R.string.timer_status_running)
+        timer.state == TimerState.PAUSED -> stringResource(R.string.timer_status_paused)
+        else -> stringResource(R.string.timer_status_ready)
     }
 
-    val soundLabel = remember(timer.soundPreset, timer.customSoundPath, timer.customSoundName) {
+    val soundLabel = remember(context, timer.soundPreset, timer.customSoundPath, timer.customSoundName) {
         resolveSoundLabel(
+            context = context,
             isAlarm = false,
             soundPreset = timer.soundPreset,
             customSoundPath = timer.customSoundPath,
@@ -370,7 +373,7 @@ private fun TimerCard(
                             border = BorderStroke(1.dp, colors.outline),
                         ) {
                             Text(
-                                text = "Sin sonido · Solo vibración",
+                                text = stringResource(R.string.sound_silent_badge),
                                 style = AppTypography.label,
                                 color = colors.textSecondary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -435,7 +438,7 @@ private fun TimerCard(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
-                                        text = "+1 min",
+                                        text = stringResource(R.string.alert_add_minute),
                                         style = AppTypography.label,
                                         color = colors.textPrimary,
                                     )
@@ -450,7 +453,7 @@ private fun TimerCard(
                         ) {
                             SmallIconButton(
                                 iconRes = R.drawable.ic_reset,
-                                contentDescription = "Reiniciar",
+                                contentDescription = stringResource(R.string.action_reset),
                                 containerColor = colors.surfaceElevated,
                                 iconColor = colors.textPrimary,
                                 onClick = onReset,
@@ -465,7 +468,7 @@ private fun TimerCard(
                                 onDelete()
                             },
                             onCancelConfirm = { confirmingDelete = false },
-                            contentDescription = "Eliminar",
+                            contentDescription = stringResource(R.string.action_delete),
                             buttonSize = 42.dp,
                         )
                     }
@@ -474,7 +477,9 @@ private fun TimerCard(
                     if (!isFinished) {
                         SmallIconButton(
                             iconRes = if (isRunning) R.drawable.ic_pause else R.drawable.ic_play,
-                            contentDescription = if (isRunning) "Pausar" else "Iniciar",
+                            contentDescription = stringResource(
+                                if (isRunning) R.string.action_pause else R.string.action_start,
+                            ),
                             containerColor = colors.accent,
                             iconColor = colors.onAccent,
                             onClick = if (isRunning) onPause else onStart,
@@ -525,6 +530,7 @@ private fun TimerEditorDialog(
         customName: String?,
     ) -> Unit,
 ) {
+    val context = LocalContext.current
     val colors = AppTheme.colors
     val initialSeconds = ((initial?.durationMillis ?: (5 * 60_000L)) / 1000L).coerceAtLeast(0L)
     var label by remember(initial) { mutableStateOf(initial?.label.orEmpty()) }
@@ -560,7 +566,9 @@ private fun TimerEditorDialog(
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Text(
-                    text = if (initial == null) "Nuevo temporizador" else "Editar temporizador",
+                    text = stringResource(
+                        if (initial == null) R.string.timer_dialog_new else R.string.timer_dialog_edit,
+                    ),
                     style = AppTypography.title,
                     color = colors.textPrimary,
                 )
@@ -574,7 +582,7 @@ private fun TimerEditorDialog(
                     Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         if (label.isEmpty()) {
                             Text(
-                                text = "Nombre (opcional, ej. Café)",
+                                text = stringResource(R.string.timer_label_hint),
                                 style = AppTypography.body,
                                 color = colors.textSecondary,
                             )
@@ -596,7 +604,7 @@ private fun TimerEditorDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     NumberStepper(
-                        title = "Horas",
+                        title = stringResource(R.string.unit_hours),
                         value = hours,
                         maxValue = 99,
                         onValueChange = { hours = it },
@@ -609,7 +617,7 @@ private fun TimerEditorDialog(
                         color = colors.textSecondary,
                     )
                     NumberStepper(
-                        title = "Minutos",
+                        title = stringResource(R.string.unit_minutes),
                         value = minutes,
                         maxValue = 59,
                         onValueChange = { minutes = it },
@@ -622,7 +630,7 @@ private fun TimerEditorDialog(
                         color = colors.textSecondary,
                     )
                     NumberStepper(
-                        title = "Segundos",
+                        title = stringResource(R.string.unit_seconds),
                         value = seconds,
                         maxValue = 59,
                         onValueChange = { seconds = it },
@@ -692,7 +700,7 @@ private fun TimerEditorDialog(
                         color = colors.surfaceElevated,
                     ) {
                         Text(
-                            text = "Cancelar",
+                            text = stringResource(R.string.action_cancel),
                             style = AppTypography.label,
                             color = colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -705,7 +713,7 @@ private fun TimerEditorDialog(
                             .clickable(enabled = totalMillis > 0L) {
                                 val resolvedLabel = label.trim().ifEmpty {
                                     if (hours == 0 && seconds == 0) {
-                                        "$minutes min"
+                                        context.getString(R.string.timer_preset_label, minutes)
                                     } else {
                                         formatMillis(totalMillis)
                                     }
@@ -722,7 +730,7 @@ private fun TimerEditorDialog(
                         color = if (totalMillis > 0L) colors.accent else colors.outline,
                     ) {
                         Text(
-                            text = "Guardar",
+                            text = stringResource(R.string.action_save),
                             style = AppTypography.label,
                             color = if (totalMillis > 0L) colors.onAccent else colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),

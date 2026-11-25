@@ -45,8 +45,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.designsystem.AppColorScheme
 import com.reloj.app.core.designsystem.AppTheme
 import com.reloj.app.core.designsystem.AppTypography
@@ -112,7 +115,7 @@ internal fun ClockWidgetStyleCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Estilo del widget",
+                    text = stringResource(R.string.settings_widget_style_title),
                     style = AppTypography.title,
                     color = colors.textPrimary,
                 )
@@ -121,7 +124,7 @@ internal fun ClockWidgetStyleCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = selectedStyle.label,
+                        text = stringResource(selectedStyle.labelRes),
                         style = AppTypography.label,
                         color = colors.accent,
                     )
@@ -186,7 +189,7 @@ internal fun ClockWidgetStyleCard(
             }
 
             Text(
-                text = "Toca la vista previa para elegir entre los 10 estilos disponibles.",
+                text = stringResource(R.string.settings_widget_style_hint),
                 style = AppTypography.label,
                 color = colors.textSecondary,
             )
@@ -202,8 +205,10 @@ private fun ClockWidgetLivePreview(
     use24HourFormat: Boolean,
     onClick: () -> Unit,
 ) {
-    val spanishLocale = remember { Locale.forLanguageTag("es") }
-    val datePattern = remember(spanishLocale) { SimpleDateFormat("EEE, d 'de' MMM", spanishLocale) }
+    val context = LocalContext.current
+    val activeLocale = remember(context) { AppLocaleManager.effectiveLocale(context) }
+    val datePatternStr = stringResource(R.string.date_pattern_widget_short)
+    val datePattern = remember(activeLocale, datePatternStr) { SimpleDateFormat(datePatternStr, activeLocale) }
     val timePattern = remember(use24HourFormat) {
         SimpleDateFormat(if (use24HourFormat) "HH:mm" else "h:mm", Locale.US)
     }
@@ -220,9 +225,9 @@ private fun ClockWidgetLivePreview(
     val periodText = remember(nowMillis, use24HourFormat) {
         if (use24HourFormat) null else periodPattern.format(nowDate).uppercase(Locale.US)
     }
-    val dateText = remember(nowMillis / 60_000L) {
+    val dateText = remember(nowMillis / 60_000L, activeLocale, datePatternStr) {
         datePattern.format(nowDate).replaceFirstChar { ch ->
-            if (ch.isLowerCase()) ch.titlecase(spanishLocale) else ch.toString()
+            if (ch.isLowerCase()) ch.titlecase(activeLocale) else ch.toString()
         }
     }
 
@@ -478,7 +483,7 @@ private fun ClockWidgetLivePreview(
                     ) {
                         if (style == ClockWidgetStyle.TECH_MONO) {
                             Text(
-                                text = dateText.uppercase(spanishLocale),
+                                text = dateText.uppercase(activeLocale),
                                 style = AppTypography.label.copy(fontFamily = FontFamily.Monospace, letterSpacing = 1.sp),
                                 color = secondaryText,
                             )
@@ -562,7 +567,7 @@ private fun PreviewAlarmPill(
                 modifier = Modifier.size(11.dp),
             )
             Text(
-                text = "Lun · 07:30",
+                text = stringResource(R.string.preview_alarm_sample),
                 style = AppTypography.label.copy(
                     fontFamily = fontFamily,
                     fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
@@ -746,7 +751,7 @@ private fun ClockWidgetStyleTile(
         }
 
         Text(
-            text = style.label,
+            text = stringResource(style.labelRes),
             style = AppTypography.label.copy(fontSize = 10.sp),
             color = if (selected) colors.accent else colors.textSecondary,
             maxLines = 1,

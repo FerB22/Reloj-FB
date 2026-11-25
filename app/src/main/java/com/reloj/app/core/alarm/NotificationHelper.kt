@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.reloj.app.MainActivity
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.SoundPreferences
 import com.reloj.app.core.data.local.TimerEntity
 import com.reloj.app.core.data.local.TimerState
@@ -27,15 +28,16 @@ object NotificationHelper {
     private const val TAG_RUNNING_TIMER = "reloj_running_timer"
 
     fun ensureAlertChannels(context: Context) {
+        val localized = AppLocaleManager.localizedContext(context)
         val manager = context.getSystemService(NotificationManager::class.java)
 
         if (manager.getNotificationChannel(ALERTS_CHANNEL_ID) == null) {
             val highChannel = NotificationChannel(
                 ALERTS_CHANNEL_ID,
-                "Alertas de alarma y temporizador",
+                localized.getString(R.string.channel_alerts_name),
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
-                description = "Notificaciones activas mientras suena una alarma o temporizador"
+                description = localized.getString(R.string.channel_alerts_desc)
                 setSound(null, null)
                 enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -46,10 +48,10 @@ object NotificationHelper {
         if (manager.getNotificationChannel(ALERTS_ONGOING_CHANNEL_ID) == null) {
             val quietChannel = NotificationChannel(
                 ALERTS_ONGOING_CHANNEL_ID,
-                "Temporizador activo en pantalla",
+                localized.getString(R.string.channel_ongoing_name),
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Mantiene el aviso en la barra de estado mientras se muestra el banner flotante"
+                description = localized.getString(R.string.channel_ongoing_desc)
                 setSound(null, null)
                 enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -60,10 +62,10 @@ object NotificationHelper {
         if (manager.getNotificationChannel(TIMERS_RUNNING_CHANNEL_ID) == null) {
             val runningTimersChannel = NotificationChannel(
                 TIMERS_RUNNING_CHANNEL_ID,
-                "Temporizadores en curso",
+                localized.getString(R.string.channel_running_timers_name),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Muestra el contador en vivo y controles mientras hay un temporizador activo"
+                description = localized.getString(R.string.channel_running_timers_desc)
                 setSound(null, null)
                 enableVibration(false)
                 setShowBadge(false)
@@ -91,6 +93,7 @@ object NotificationHelper {
         }
 
         ensureAlertChannels(context)
+        val localized = AppLocaleManager.localizedContext(context)
         val manager = context.getSystemService(NotificationManager::class.java)
         val activeTimers = timers.filter { timer ->
             (timer.state == TimerState.RUNNING && (timer.endAtMillis ?: 0L) > now) ||
@@ -124,7 +127,7 @@ object NotificationHelper {
 
             val builder = NotificationCompat.Builder(context, TIMERS_RUNNING_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_timer)
-                .setContentTitle(timer.label.ifBlank { "Temporizador" })
+                .setContentTitle(timer.label.ifBlank { localized.getString(R.string.timer_channel_name) })
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setOnlyAlertOnce(true)
@@ -155,13 +158,13 @@ object NotificationHelper {
                 )
 
                 builder
-                    .setContentText("Temporizador en curso")
+                    .setContentText(localized.getString(R.string.notif_timer_running))
                     .setWhen(endAt)
                     .setShowWhen(true)
                     .setUsesChronometer(true)
                     .setChronometerCountDown(true)
-                    .addAction(0, "Pausar", pausePending)
-                    .addAction(0, "+1 min", addMinutePending)
+                    .addAction(0, localized.getString(R.string.action_pause), pausePending)
+                    .addAction(0, localized.getString(R.string.alert_add_minute), addMinutePending)
             } else {
                 val remaining = (timer.remainingMillis ?: 0L).coerceAtLeast(0L)
                 val resumePending = PendingIntent.getBroadcast(
@@ -182,11 +185,11 @@ object NotificationHelper {
                 )
 
                 builder
-                    .setContentText("En pausa · ${formatRemainingClock(remaining)}")
+                    .setContentText(localized.getString(R.string.notif_timer_paused, formatRemainingClock(remaining)))
                     .setShowWhen(false)
                     .setUsesChronometer(false)
-                    .addAction(0, "Reanudar", resumePending)
-                    .addAction(0, "Reiniciar", resetPending)
+                    .addAction(0, localized.getString(R.string.action_resume), resumePending)
+                    .addAction(0, localized.getString(R.string.action_reset), resetPending)
             }
 
             manager.notify(TAG_RUNNING_TIMER, timer.id.toInt(), builder.build())
@@ -243,8 +246,13 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val localized = AppLocaleManager.localizedContext(context)
         val snoozeMinutes = SoundPreferences.get(context).settings.value.snoozeMinutes
-        val snoozeLabel = if (isAlarm) "Posponer $snoozeMinutes min" else "+1 min"
+        val snoozeLabel = if (isAlarm) {
+            localized.getString(R.string.alert_snooze_minutes, snoozeMinutes)
+        } else {
+            localized.getString(R.string.alert_add_minute)
+        }
         val channelId = if (suppressHeadsUp) ALERTS_ONGOING_CHANNEL_ID else ALERTS_CHANNEL_ID
         val priority = if (suppressHeadsUp) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_MAX
 
@@ -264,7 +272,7 @@ object NotificationHelper {
                     setFullScreenIntent(fullScreenPendingIntent, true)
                 }
             }
-            .addAction(0, "Detener", stopPendingIntent)
+            .addAction(0, localized.getString(R.string.alert_stop), stopPendingIntent)
             .addAction(0, snoozeLabel, snoozePendingIntent)
             .build()
     }

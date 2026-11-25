@@ -1,5 +1,7 @@
 package com.reloj.app.core.data.local
 
+import android.content.Context
+import com.reloj.app.R
 import java.util.Calendar
 
 /**
@@ -13,8 +15,25 @@ object AlarmRepeatUtils {
     const val MASK_WEEKENDS = 0b1100000
     const val MASK_EVERYDAY = 0b1111111
 
-    val DAY_SHORT_LETTERS = listOf("L", "M", "X", "J", "V", "S", "D")
-    private val DAY_LABELS = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+    val DAY_SHORT_LETTER_RES = listOf(
+        R.string.day_letter_mon,
+        R.string.day_letter_tue,
+        R.string.day_letter_wed,
+        R.string.day_letter_thu,
+        R.string.day_letter_fri,
+        R.string.day_letter_sat,
+        R.string.day_letter_sun,
+    )
+
+    private val DAY_LABEL_RES = listOf(
+        R.string.day_short_mon,
+        R.string.day_short_tue,
+        R.string.day_short_wed,
+        R.string.day_short_thu,
+        R.string.day_short_fri,
+        R.string.day_short_sat,
+        R.string.day_short_sun,
+    )
 
     fun hasDay(mask: Int, dayIndex: Int): Boolean = (mask and (1 shl dayIndex)) != 0
 
@@ -29,6 +48,11 @@ object AlarmRepeatUtils {
         Calendar.SATURDAY -> 5
         Calendar.SUNDAY -> 6
         else -> 0
+    }
+
+    fun dayShortLabel(context: Context, calendarDayOfWeek: Int): String {
+        val index = dayIndexFromCalendar(calendarDayOfWeek)
+        return context.getString(DAY_LABEL_RES[index])
     }
 
     fun nextTriggerMillis(
@@ -68,22 +92,23 @@ object AlarmRepeatUtils {
         return nowMillis + 24 * 60 * 60_000L
     }
 
-    fun formatRepeatSummary(mask: Int): String = when (mask) {
-        MASK_NONE -> "Una vez"
-        MASK_EVERYDAY -> "Todos los días"
-        MASK_WEEKDAYS -> "Lun a vie"
-        MASK_WEEKENDS -> "Fines de semana"
-        else -> DAY_LABELS.indices
+    fun formatRepeatSummary(context: Context, mask: Int): String = when (mask) {
+        MASK_NONE -> context.getString(R.string.alarm_repeat_once)
+        MASK_EVERYDAY -> context.getString(R.string.alarm_repeat_everyday)
+        MASK_WEEKDAYS -> context.getString(R.string.alarm_repeat_weekdays)
+        MASK_WEEKENDS -> context.getString(R.string.alarm_repeat_weekends)
+        else -> DAY_LABEL_RES.indices
             .filter { hasDay(mask, it) }
-            .joinToString(" · ") { DAY_LABELS[it] }
+            .joinToString(" · ") { context.getString(DAY_LABEL_RES[it]) }
     }
 
     fun formatRemainingUntil(
+        context: Context,
         triggerMillis: Long,
         nowMillis: Long = System.currentTimeMillis(),
     ): String {
         val diffMillis = (triggerMillis - nowMillis).coerceAtLeast(0L)
-        if (diffMillis < 60_000L) return "En menos de 1 min"
+        if (diffMillis < 60_000L) return context.getString(R.string.alarm_in_less_than_min)
 
         val totalMinutes = (diffMillis + 59_999L) / 60_000L
         val days = totalMinutes / (24L * 60L)
@@ -91,9 +116,17 @@ object AlarmRepeatUtils {
         val minutes = totalMinutes % 60L
 
         return when {
-            days > 0L -> if (hours > 0L) "En ${days} d ${hours} h" else "En ${days} d"
-            hours > 0L -> if (minutes > 0L) "En ${hours} h ${minutes} min" else "En ${hours} h"
-            else -> "En ${minutes} min"
+            days > 0L -> if (hours > 0L) {
+                context.getString(R.string.alarm_in_days_hours, days, hours)
+            } else {
+                context.getString(R.string.alarm_in_days, days)
+            }
+            hours > 0L -> if (minutes > 0L) {
+                context.getString(R.string.alarm_in_hours_mins, hours, minutes)
+            } else {
+                context.getString(R.string.alarm_in_hours, hours)
+            }
+            else -> context.getString(R.string.alarm_in_mins, minutes)
         }
     }
 

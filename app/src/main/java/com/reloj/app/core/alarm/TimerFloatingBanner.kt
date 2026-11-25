@@ -24,6 +24,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.compose.ui.graphics.toArgb
 import com.reloj.app.R
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.designsystem.AppColorScheme
 import com.reloj.app.core.designsystem.buildAppColorScheme
@@ -209,7 +210,7 @@ class TimerFloatingBanner(private val context: Context) {
             if (scheme.isDark) 0x33000000 else 0x33FFFFFF,
         )
         val stopButton = TextView(context).apply {
-            text = "Detener"
+            text = AppLocaleManager.localizedContext(context).getString(R.string.alert_stop)
             setTextColor(scheme.onAccent.toArgb())
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             typeface = Typeface.DEFAULT_BOLD

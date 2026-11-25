@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.PowerManager
 import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmRepeatUtils
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.data.repository.AlarmRepository
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class ClockAlarmReceiver : BroadcastReceiver() {
         }.getOrNull()
 
         var startedSynchronously = false
+        val localized = AppLocaleManager.localizedContext(context)
         if (hasPayload) {
             val hour = intent.getIntExtra(EXTRA_HOUR, -1)
             val minute = intent.getIntExtra(EXTRA_MINUTE, -1)
@@ -40,10 +42,10 @@ class ClockAlarmReceiver : BroadcastReceiver() {
             val title = if (hour in 0..23 && minute in 0..59) {
                 AlarmRepeatUtils.formatAlarmTime(hour, minute, use24Hour)
             } else {
-                context.getString(R.string.alarm_ringing)
+                localized.getString(R.string.alarm_ringing)
             }
             val subtitle = listOfNotNull(
-                if (isSnooze) "Pospuesta" else null,
+                if (isSnooze) localized.getString(R.string.alert_snoozed) else null,
                 label,
             ).joinToString(" · ")
 
@@ -70,9 +72,9 @@ class ClockAlarmReceiver : BroadcastReceiver() {
                     val use24Hour = ThemePreferences.get(context).settings.value.use24HourFormat
                     val label = alarm?.label?.ifBlank { null }
                     val timeLabel = alarm?.let { AlarmRepeatUtils.formatAlarmTime(it.hour, it.minute, use24Hour) }
-                    val title = timeLabel ?: context.getString(R.string.alarm_ringing)
+                    val title = timeLabel ?: localized.getString(R.string.alarm_ringing)
                     val subtitle = listOfNotNull(
-                        if (isSnooze) "Pospuesta" else null,
+                        if (isSnooze) localized.getString(R.string.alert_snoozed) else null,
                         label,
                     ).joinToString(" · ")
 

@@ -1,5 +1,6 @@
 package com.reloj.app
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
@@ -46,12 +47,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.reloj.app.core.alarm.NotificationHelper
 import com.reloj.app.core.data.local.AppIconManager
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.data.repository.AlarmRepository
 import com.reloj.app.core.data.repository.TimerRepository
@@ -68,15 +72,19 @@ import com.reloj.app.feature.widget.TimerWidget
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
-private enum class AppTab(val label: String, val iconRes: Int) {
-    ALARMS("Alarmas", R.drawable.ic_alarm),
-    TIMERS("Temporizadores", R.drawable.ic_timer),
-    SETTINGS("Ajustes", R.drawable.ic_settings),
+private enum class AppTab(@param:StringRes val labelRes: Int, val iconRes: Int) {
+    ALARMS(R.string.tab_alarms, R.drawable.ic_alarm),
+    TIMERS(R.string.tab_timers, R.drawable.ic_timer),
+    SETTINGS(R.string.tab_settings, R.drawable.ic_settings),
 }
 
 class MainActivity : ComponentActivity() {
 
     private var requestedTab by mutableStateOf<AppTab?>(null)
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -247,6 +255,17 @@ class MainActivity : ComponentActivity() {
                                             ClockWidget.updateAll(this@MainActivity)
                                         }
                                     },
+                                    onLanguageChange = { language ->
+                                        val needsRecreate = AppLocaleManager.setLanguage(this@MainActivity, language)
+                                        scope.launch {
+                                            TimerWidget.updateAll(this@MainActivity)
+                                            ClockWidget.updateAll(this@MainActivity)
+                                            timerRepo.syncNotifications()
+                                        }
+                                        if (needsRecreate) {
+                                            recreate()
+                                        }
+                                    },
                                 )
                             }
                         }
@@ -364,6 +383,7 @@ private fun RelojBottomBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    val tabLabel = stringResource(tab.labelRes)
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
@@ -373,13 +393,13 @@ private fun RelojBottomBar(
                     ) {
                         Icon(
                             painter = painterResource(tab.iconRes),
-                            contentDescription = tab.label,
+                            contentDescription = tabLabel,
                             tint = itemColor,
                             modifier = Modifier.size(22.dp),
                         )
                     }
                     Text(
-                        text = tab.label,
+                        text = tabLabel,
                         style = AppTypography.label,
                         color = itemColor,
                     )

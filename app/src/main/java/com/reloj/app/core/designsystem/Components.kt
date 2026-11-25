@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -394,7 +395,7 @@ fun ConfirmDeleteButton(
                 ) + fadeOut(animationSpec = tween(durationMillis = 150)),
             ) {
                 Text(
-                    text = "Confirmar",
+                    text = stringResource(R.string.action_confirm),
                     style = AppTypography.label,
                     color = contentColor,
                     maxLines = 1,
@@ -408,7 +409,11 @@ fun ConfirmDeleteButton(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
-                    contentDescription = if (confirming) "Confirmar eliminación" else contentDescription,
+                    contentDescription = if (confirming) {
+                        stringResource(R.string.action_confirm_delete)
+                    } else {
+                        contentDescription
+                    },
                     tint = contentColor,
                     modifier = Modifier.size(18.dp),
                 )

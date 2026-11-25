@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App y widgets -->
+    <string name="app_name">Reloj</string>
+    <string name="widget_label">Temporizadores</string>
+    <string name="widget_description">Temporizadores guardados y cuenta regresiva en vivo</string>
+    <string name="clock_widget_label">Reloj digital</string>
+    <string name="clock_widget_description">Hora actual, fecha y próxima alarma con tu tema</string>
+    <string name="widget_open_app">Abrir</string>
+    <string name="widget_empty_timers">Sin temporizadores · Toca para crear</string>
+    <string name="widget_back_to_list">← Lista</string>
+    <string name="widget_view">Ver</string>
+    <string name="widget_no_alarms">Sin alarmas</string>
+
+    <!-- Canales de notificación y alertas -->
+    <string name="timer_channel_name">Temporizadores</string>
+    <string name="timer_finished">Temporizador finalizado</string>
+    <string name="alarm_channel_name">Alarmas</string>
+    <string name="alarm_ringing">Alarma</string>
+    <string name="channel_alerts_name">Alertas de alarma y temporizador</string>
+    <string name="channel_alerts_desc">Notificaciones activas mientras suena una alarma o temporizador</string>
+    <string name="channel_ongoing_name">Temporizador activo en pantalla</string>
+    <string name="channel_ongoing_desc">Mantiene el aviso en la barra de estado mientras se muestra el banner flotante</string>
+    <string name="channel_running_timers_name">Temporizadores en curso</string>
+    <string name="channel_running_timers_desc">Muestra el contador en vivo y controles mientras hay un temporizador activo</string>
+    <string name="notif_timer_running">Temporizador en curso</string>
+    <string name="notif_timer_paused">En pausa · %1$s</string>
+    <string name="alert_badge_alarm">ALARMA</string>
+    <string name="alert_badge_timer">TEMPORIZADOR</string>
+    <string name="alert_snoozed">Pospuesta</string>
+    <string name="alert_stop">Detener</string>
+    <string name="alert_snooze_minutes">Posponer %1$d min</string>
+    <string name="alert_add_minute">+1 min</string>
+    <string name="alert_volume_hint">Subir volumen: posponer · Bajar volumen: detener</string>
+    <string name="alert_silent_format">Sin sonido · %1$s</string>
+
+    <!-- Pestañas de navegación -->
+    <string name="tab_alarms">Alarmas</string>
+    <string name="tab_timers">Temporizadores</string>
+    <string name="tab_settings">Ajustes</string>
+
+    <!-- Acciones comunes -->
+    <string name="action_new">Nuevo</string>
+    <string name="action_add">Añadir</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_confirm">Confirmar</string>
+    <string name="action_confirm_delete">Confirmar eliminación</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_delete_alarm">Eliminar alarma</string>
+    <string name="action_pause">Pausar</string>
+    <string name="action_resume">Reanudar</string>
+    <string name="action_start">Iniciar</string>
+    <string name="action_reset">Reiniciar</string>
+    <string name="action_active">Activo</string>
+    <string name="action_enable">Activar</string>
+
+    <!-- Pantalla de alarmas -->
+    <string name="alarms_empty_title">Sin alarmas configuradas</string>
+    <string name="alarms_empty_desc">Crea una alarma para programar tu próximo aviso.</string>
+    <string name="alarm_next_summary">Próxima · %1$s · %2$s</string>
+    <string name="alarm_dialog_new">Nueva alarma</string>
+    <string name="alarm_dialog_edit">Editar alarma</string>
+    <string name="alarm_label_hint">Etiqueta (opcional, ej. Despertar)</string>
+    <string name="alarm_repeat">Repetir</string>
+    <string name="alarm_repeat_weekdays_chip">Lun-Vie</string>
+    <string name="alarm_repeat_all_chip">Todos</string>
+    <string name="alarm_repeat_once">Una vez</string>
+    <string name="alarm_repeat_everyday">Todos los días</string>
+    <string name="alarm_repeat_weekdays">Lun a vie</string>
+    <string name="alarm_repeat_weekends">Fines de semana</string>
+    <string name="alarm_in_less_than_min">En menos de 1 min</string>
+    <string name="alarm_in_days_hours">En %1$d d %2$d h</string>
+    <string name="alarm_in_days">En %1$d d</string>
+    <string name="alarm_in_hours_mins">En %1$d h %2$d min</string>
+    <string name="alarm_in_hours">En %1$d h</string>
+    <string name="alarm_in_mins">En %1$d min</string>
+
+    <!-- Días de la semana -->
+    <string name="day_letter_mon">L</string>
+    <string name="day_letter_tue">M</string>
+    <string name="day_letter_wed">X</string>
+    <string name="day_letter_thu">J</string>
+    <string name="day_letter_fri">V</string>
+    <string name="day_letter_sat">S</string>
+    <string name="day_letter_sun">D</string>
+    <string name="day_short_mon">Lun</string>
+    <string name="day_short_tue">Mar</string>
+    <string name="day_short_wed">Mié</string>
+    <string name="day_short_thu">Jue</string>
+    <string name="day_short_fri">Vie</string>
+    <string name="day_short_sat">Sáb</string>
+    <string name="day_short_sun">Dom</string>
+
+    <!-- Patrones de fecha -->
+    <string name="date_pattern_full">EEEE, d \'de\' MMMM</string>
+    <string name="date_pattern_widget_short">EEE, d \'de\' MMM</string>
+    <string name="date_pattern_widget_long">EEEE, d \'de\' MMM</string>
+    <string name="date_pattern_widget_mono">EEE · d MMM</string>
+    <string name="preview_alarm_sample">Lun · 07:30</string>
+
+    <!-- Pantalla de temporizadores -->
+    <string name="timers_empty_title">No hay temporizadores</string>
+    <string name="timers_empty_desc">Añade un temporizador personalizado o usa un acceso rápido arriba.</string>
+    <string name="timer_preset_label">%1$d min</string>
+    <string name="timer_preset_chip">+ %1$d min</string>
+    <string name="timer_status_ready">Listo</string>
+    <string name="timer_status_running">En curso</string>
+    <string name="timer_status_paused">Pausado</string>
+    <string name="timer_status_finished">Finalizado</string>
+    <string name="timer_dialog_new">Nuevo temporizador</string>
+    <string name="timer_dialog_edit">Editar temporizador</string>
+    <string name="timer_label_hint">Nombre (opcional, ej. Café)</string>
+    <string name="unit_hour">Hora</string>
+    <string name="unit_hours">Horas</string>
+    <string name="unit_minute">Minuto</string>
+    <string name="unit_minutes">Minutos</string>
+    <string name="unit_seconds">Segundos</string>
+
+    <!-- Selector de sonido y tonos -->
+    <string name="sound_title">Sonido</string>
+    <string name="sound_default_settings">Predeterminado (Ajustes)</string>
+    <string name="sound_silent_badge">Sin sonido · Solo vibración</string>
+    <string name="sound_vibration_only">Solo vibración</string>
+    <string name="sound_custom_audio">Audio personalizado</string>
+    <string name="sound_device_audio">Audio del teléfono</string>
+    <string name="sound_importing">Guardando copia interna…</string>
+    <string name="sound_change_device_audio">Cambiar audio del teléfono…</string>
+    <string name="sound_pick_device_audio">+ Elegir canción o audio del teléfono</string>
+    <string name="sound_import_error">No se pudo importar ese audio</string>
+    <string name="sound_alarm_sunrise">Despertar intenso</string>
+    <string name="sound_alarm_sunrise_desc">Pulsos firmes y brillantes para despertar</string>
+    <string name="sound_alarm_nordic">Sirena rítmica</string>
+    <string name="sound_alarm_nordic_desc">Alternancia aguda de alta penetración</string>
+    <string name="sound_alarm_crystal">Timbre energético</string>
+    <string name="sound_alarm_crystal_desc">Repetición metálica rápida e inconfundible</string>
+    <string name="sound_alarm_intense">Alarma penetrante</string>
+    <string name="sound_alarm_intense_desc">Ráfagas agudas tipo despertador de máxima presencia</string>
+    <string name="sound_timer_chime">Aviso claro</string>
+    <string name="sound_timer_chime_desc">Tres tonos ascendentes de alta presencia</string>
+    <string name="sound_timer_pulse">Bip rápido</string>
+    <string name="sound_timer_pulse_desc">Secuencia aguda directa e intensa</string>
+    <string name="sound_timer_intense">Sirena despertador</string>
+    <string name="sound_timer_intense_desc">Dos tonos agudos urgentes para despertar</string>
+
+    <!-- Secciones de Ajustes -->
+    <string name="settings_section_appearance">APARIENCIA</string>
+    <string name="settings_section_clock_widget">WIDGET DE RELOJ</string>
+    <string name="settings_section_app_icon">ICONO DE LA APLICACIÓN</string>
+    <string name="settings_section_sound">SONIDO Y ALERTAS</string>
+    <string name="settings_section_permissions">PERMISOS DEL SISTEMA</string>
+
+    <string name="settings_theme_title">Tema de fondo</string>
+    <string name="settings_accent_title">Color de acento</string>
+    <string name="settings_time_format_title">Formato horario</string>
+    <string name="settings_time_format_24h_example">24 h (19:30)</string>
+    <string name="settings_time_format_12h_example">12 h (7:30 PM)</string>
+    <string name="settings_time_format_24h">24 h</string>
+    <string name="settings_time_format_12h">12 h</string>
+    <string name="settings_language_title">Idioma</string>
+    <string name="language_system">Sistema</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_english">English</string>
+
+    <string name="settings_widget_style_title">Estilo del widget</string>
+    <string name="settings_widget_style_hint">Toca la vista previa para elegir entre los 10 estilos disponibles.</string>
+    <string name="settings_icon_style_title">Estilo del icono</string>
+    <string name="settings_icon_pending">Icono seleccionado. Se aplicará automáticamente al salir de la aplicación.</string>
+    <string name="settings_icon_note">El cambio de icono se aplica al salir de la aplicación para no cerrarla.</string>
+
+    <string name="settings_alarm_tone">Tono de alarma</string>
+    <string name="settings_timer_tone">Tono de temporizador</string>
+    <string name="settings_vibrate_title">Vibrar al sonar</string>
+    <string name="settings_vibrate_subtitle">Patrón diferenciado para alarmas y temporizadores</string>
+    <string name="settings_gradual_title">Volumen gradual en alarmas</string>
+    <string name="settings_gradual_subtitle">Sube de forma progresiva durante los primeros 6 s</string>
+    <string name="settings_intense_wake_title">Modo despertador intenso</string>
+    <string name="settings_intense_wake_subtitle">Sube temporalmente el volumen al 90 %, refuerza el altavoz e intensifica la vibración</string>
+    <string name="settings_volume_buttons_title">Botones de volumen al sonar</string>
+    <string name="settings_volume_buttons_subtitle">Subir pospone · Bajar detiene la alarma</string>
+    <string name="settings_snooze_title">Duración de posponer</string>
+    <string name="settings_snooze_subtitle">Tiempo extra al pulsar Posponer</string>
+    <string name="settings_snooze_option">%1$d min</string>
+
+    <string name="perm_notifications_title">Notificaciones</string>
+    <string name="perm_notifications_subtitle">Necesarias para avisar cuando termine un temporizador</string>
+    <string name="perm_exact_alarms_title">Alarmas exactas</string>
+    <string name="perm_exact_alarms_subtitle">Garantiza precisión aunque la pantalla esté apagada</string>
+    <string name="perm_fullscreen_title">Alertas con pantalla bloqueada</string>
+    <string name="perm_fullscreen_subtitle">Permite mostrar Detener y Posponer al despertar el móvil</string>
+    <string name="perm_overlay_title">Mostrar sobre otras apps</string>
+    <string name="perm_overlay_subtitle">Muestra el banner flotante personalizado al estar en otra aplicación</string>
+    <string name="perm_battery_title">Sin restricciones de batería</string>
+    <string name="perm_battery_subtitle">Evita que el sistema suspenda las alarmas con la pantalla apagada</string>
+
+    <!-- Modos de tema -->
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Beige</string>
+    <string name="theme_dark">Carbón</string>
+    <string name="theme_ice">Hielo</string>
+    <string name="theme_midnight">Medianoche</string>
+    <string name="theme_forest">Bosque</string>
+
+    <!-- Colores de acento -->
+    <string name="accent_amber">Ámbar</string>
+    <string name="accent_terracotta">Terracota</string>
+    <string name="accent_sage">Salvia</string>
+    <string name="accent_slate">Pizarra</string>
+    <string name="accent_monochrome">Monocromo</string>
+    <string name="accent_cobalt">Cobalto</string>
+    <string name="accent_crimson">Carmesí</string>
+    <string name="accent_emerald">Esmeralda</string>
+    <string name="accent_violet">Violeta</string>
+    <string name="accent_rose">Rosa</string>
+    <string name="accent_gold">Oro</string>
+    <string name="accent_teal">Turquesa</string>
+
+    <!-- Estilos de widget de reloj -->
+    <string name="widget_style_classic">Clásico</string>
+    <string name="widget_style_minimal">Transparente</string>
+    <string name="widget_style_compact_row">Barra lateral</string>
+    <string name="widget_style_stacked">Apilado</string>
+    <string name="widget_style_split_tiles">Dos bloques</string>
+    <string name="widget_style_accent_hero">Acento sólido</string>
+    <string name="widget_style_tech_mono">Técnico</string>
+    <string name="widget_style_capsule">Cápsula</string>
+    <string name="widget_style_bold_edge">Barra acento</string>
+    <string name="widget_style_editorial">Editorial</string>
+
+    <!-- Iconos de la aplicación -->
+    <string name="icon_carbon_amber">Carbón y ámbar</string>
+    <string name="icon_beige_carbon">Beige y carbón</string>
+    <string name="icon_night_terracotta">Noche y terracota</string>
+    <string name="icon_forest_sage">Bosque y salvia</string>
+    <string name="icon_sapphire_ice">Zafiro y hielo</string>
+    <string name="icon_burgundy_gold">Burdeos y oro</string>
+    <string name="icon_graphite_coral">Grafito y coral</string>
+    <string name="icon_cobalt_white">Cobalto y blanco</string>
+    <string name="icon_terracotta_cream">Terracota y crema</string>
+    <string name="icon_mono_light">Claro monocromo</string>
+</resources>

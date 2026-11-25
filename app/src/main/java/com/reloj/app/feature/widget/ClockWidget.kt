@@ -13,6 +13,7 @@ import com.reloj.app.MainActivity
 import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmEntity
 import com.reloj.app.core.data.local.AlarmRepeatUtils
+import com.reloj.app.core.data.local.AppLocaleManager
 import com.reloj.app.core.data.local.ThemePreferences
 import com.reloj.app.core.data.repository.AlarmRepository
 import com.reloj.app.core.designsystem.AppColorScheme
@@ -184,13 +185,27 @@ object ClockWidget {
             views.setTextColor(R.id.clock_period, accentColor)
         }
 
+        val localized = AppLocaleManager.localizedContext(context)
+        val datePatternRes = when (style) {
+            ClockWidgetStyle.TECH_MONO -> R.string.date_pattern_widget_mono
+            ClockWidgetStyle.EDITORIAL_SERIF -> R.string.date_pattern_full
+            ClockWidgetStyle.MINIMAL_CLEAR,
+            ClockWidgetStyle.STACKED_DUO,
+            ClockWidgetStyle.BOLD_EDGE,
+            -> R.string.date_pattern_widget_long
+            else -> R.string.date_pattern_widget_short
+        }
+        val datePattern = localized.getString(datePatternRes)
+        views.setCharSequence(R.id.clock_date, "setFormat12Hour", datePattern)
+        views.setCharSequence(R.id.clock_date, "setFormat24Hour", datePattern)
         views.setTextColor(R.id.clock_date, secondaryTextColor)
         if (spec.hasAlarmPillBg) {
             views.setInt(R.id.clock_alarm_pill_bg, "setColorFilter", scheme.surface.toArgb())
         }
 
         if (nextAlarm != null) {
-            val dayShort = dayShortLabel(nextAlarm.triggerMillis)
+            val cal = Calendar.getInstance().apply { timeInMillis = nextAlarm.triggerMillis }
+            val dayShort = AlarmRepeatUtils.dayShortLabel(localized, cal.get(Calendar.DAY_OF_WEEK))
             val alarmTime = AlarmRepeatUtils.formatAlarmTime(
                 hour = nextAlarm.alarm.hour,
                 minute = nextAlarm.alarm.minute,
@@ -201,26 +216,12 @@ object ClockWidget {
             views.setTextColor(R.id.clock_alarm_text, accentColor)
         } else {
             views.setInt(R.id.clock_alarm_icon, "setColorFilter", secondaryTextColor)
-            views.setTextViewText(R.id.clock_alarm_text, "Sin alarmas")
+            views.setTextViewText(R.id.clock_alarm_text, localized.getString(R.string.widget_no_alarms))
             views.setTextColor(R.id.clock_alarm_text, secondaryTextColor)
         }
 
         views.setOnClickPendingIntent(R.id.clock_widget_root, openAlarmsPendingIntent(context))
         return views
-    }
-
-    private fun dayShortLabel(triggerMillis: Long): String {
-        val cal = Calendar.getInstance().apply { timeInMillis = triggerMillis }
-        return when (cal.get(Calendar.DAY_OF_WEEK)) {
-            Calendar.MONDAY -> "Lun"
-            Calendar.TUESDAY -> "Mar"
-            Calendar.WEDNESDAY -> "Mié"
-            Calendar.THURSDAY -> "Jue"
-            Calendar.FRIDAY -> "Vie"
-            Calendar.SATURDAY -> "Sáb"
-            Calendar.SUNDAY -> "Dom"
-            else -> ""
-        }
     }
 
     private fun openAlarmsPendingIntent(context: Context): PendingIntent {

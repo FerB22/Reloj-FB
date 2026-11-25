@@ -1,5 +1,6 @@
 package com.reloj.app.core.designsystem
 
+import android.content.Context
 import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,8 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.reloj.app.R
 import com.reloj.app.core.data.local.AlarmSoundPreset
 import com.reloj.app.core.data.local.CustomSoundManager
 import com.reloj.app.core.data.local.SoundPreviewPlayer
@@ -66,7 +69,7 @@ fun SoundPickerSection(
     onSelectPreset: (String) -> Unit,
     onCustomAudioImported: (path: String, displayName: String) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Sonido",
+    title: String = stringResource(R.string.sound_title),
     includeDefaultOption: Boolean = true,
     allowSilentToggle: Boolean = false,
     onToggleSoundEnabled: ((Boolean) -> Unit)? = null,
@@ -109,23 +112,24 @@ fun SoundPickerSection(
                     onCustomAudioImported(imported.path, imported.displayName)
                 }
                 .onFailure { err ->
-                    importError = err.message ?: "No se pudo importar ese audio"
+                    importError = err.message ?: context.getString(R.string.sound_import_error)
                 }
             importing = false
         }
     }
 
     val currentLabel = resolveSoundLabel(
+        context = context,
         isAlarm = isAlarm,
         soundPreset = selectedPreset,
         customSoundPath = customSoundPath,
         customSoundName = customSoundName,
     ) ?: if (includeDefaultOption) {
-        "Predeterminado (Ajustes)"
+        stringResource(R.string.sound_default_settings)
     } else if (isAlarm) {
-        AlarmSoundPreset.SUNRISE.label
+        stringResource(AlarmSoundPreset.SUNRISE.labelRes)
     } else {
-        TimerSoundPreset.CHIME.label
+        stringResource(TimerSoundPreset.CHIME.labelRes)
     }
 
     val cardColor by animateColorAsState(
@@ -172,7 +176,7 @@ fun SoundPickerSection(
                             text = if (soundEnabled) {
                                 "♪ $currentLabel"
                             } else {
-                                "Sin sonido · Solo vibración"
+                                stringResource(R.string.sound_silent_badge)
                             },
                             style = AppTypography.label,
                             color = if (soundEnabled) colors.accent else colors.textSecondary,
@@ -250,7 +254,7 @@ fun SoundPickerSection(
                 ) {
                     if (includeDefaultOption) {
                         SoundOptionRow(
-                            label = "Predeterminado (Ajustes)",
+                            label = stringResource(R.string.sound_default_settings),
                             selected = selectedPreset == null && customSoundPath == null,
                             previewKey = null,
                             isPlaying = false,
@@ -267,7 +271,7 @@ fun SoundPickerSection(
                             val key = "dlg_alarm_${preset.name}"
                             val isSelected = customSoundPath == null && selectedPreset == preset.name
                             SoundOptionRow(
-                                label = preset.label,
+                                label = stringResource(preset.labelRes),
                                 selected = isSelected,
                                 previewKey = key,
                                 isPlaying = playingKey == key,
@@ -293,7 +297,7 @@ fun SoundPickerSection(
                             val key = "dlg_timer_${preset.name}"
                             val isSelected = customSoundPath == null && selectedPreset == preset.name
                             SoundOptionRow(
-                                label = preset.label,
+                                label = stringResource(preset.labelRes),
                                 selected = isSelected,
                                 previewKey = key,
                                 isPlaying = playingKey == key,
@@ -319,7 +323,7 @@ fun SoundPickerSection(
                     if (!customSoundPath.isNullOrBlank()) {
                         val key = "dlg_custom"
                         SoundOptionRow(
-                            label = "♪ ${customSoundName ?: "Audio del teléfono"}",
+                            label = "♪ ${customSoundName ?: stringResource(R.string.sound_device_audio)}",
                             selected = true,
                             previewKey = key,
                             isPlaying = playingKey == key,
@@ -355,9 +359,9 @@ fun SoundPickerSection(
                         ) {
                             Text(
                                 text = when {
-                                    importing -> "Guardando copia interna..."
-                                    customSoundPath != null -> "Cambiar audio del teléfono..."
-                                    else -> "+ Elegir canción o audio del teléfono"
+                                    importing -> stringResource(R.string.sound_importing)
+                                    customSoundPath != null -> stringResource(R.string.sound_change_device_audio)
+                                    else -> stringResource(R.string.sound_pick_device_audio)
                                 },
                                 style = AppTypography.label,
                                 color = colors.accent,
@@ -440,21 +444,24 @@ private fun SoundOptionRow(
 }
 
 fun resolveSoundLabel(
+    context: Context,
     isAlarm: Boolean,
     soundPreset: String?,
     customSoundPath: String?,
     customSoundName: String?,
 ): String? {
     if (isSilentSoundPreset(soundPreset)) {
-        return "Solo vibración"
+        return context.getString(R.string.sound_vibration_only)
     }
     if (!customSoundPath.isNullOrBlank()) {
-        return customSoundName?.ifBlank { null } ?: "Audio personalizado"
+        return customSoundName?.ifBlank { null } ?: context.getString(R.string.sound_custom_audio)
     }
     if (soundPreset.isNullOrBlank()) return null
     return if (isAlarm) {
-        AlarmSoundPreset.entries.firstOrNull { it.name == soundPreset }?.label
+        AlarmSoundPreset.entries.firstOrNull { it.name == soundPreset }
+            ?.let { context.getString(it.labelRes) }
     } else {
-        TimerSoundPreset.entries.firstOrNull { it.name == soundPreset }?.label
+        TimerSoundPreset.entries.firstOrNull { it.name == soundPreset }
+            ?.let { context.getString(it.labelRes) }
     }
 }
