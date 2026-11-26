@@ -39,6 +39,7 @@ object TimerWidget {
 
         val timers = TimerRepository.get(context).getAll()
         val scheme = resolveColorScheme(context)
+        val glassMode = ThemePreferences.get(context).settings.value.widgetGlassMode
         val nowMillis = System.currentTimeMillis()
         val elapsedNow = SystemClock.elapsedRealtime()
 
@@ -46,9 +47,9 @@ object TimerWidget {
             val focusedId = WidgetFocusStore.getFocusedTimerId(context, appWidgetId)
             val focusedTimer = focusedId?.let { target -> timers.firstOrNull { it.id == target } }
             val views = if (focusedTimer != null) {
-                buildFocusedViews(context, appWidgetId, focusedTimer, scheme, nowMillis, elapsedNow)
+                buildFocusedViews(context, appWidgetId, focusedTimer, scheme, glassMode, nowMillis, elapsedNow)
             } else {
-                buildListViews(context, appWidgetId, timers, scheme)
+                buildListViews(context, appWidgetId, timers, scheme, glassMode)
             }
             manager.updateAppWidget(appWidgetId, views)
             if (focusedTimer == null && timers.isNotEmpty()) {
@@ -73,21 +74,43 @@ object TimerWidget {
         appWidgetId: Int,
         timers: List<TimerEntity>,
         scheme: AppColorScheme,
+        glassMode: Boolean,
     ): RemoteViews {
         val localized = AppLocaleManager.localizedContext(context)
         val views = RemoteViews(context.packageName, R.layout.widget_timer_list)
-        views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
+        if (glassMode) {
+            views.setImageViewResource(
+                R.id.widget_bg,
+                if (scheme.isDark) R.drawable.widget_glass_dark_20dp else R.drawable.widget_glass_light_20dp,
+            )
+            views.setImageViewResource(
+                R.id.btn_open_app_bg,
+                if (scheme.isDark) R.drawable.widget_glass_pill_dark_10dp else R.drawable.widget_glass_pill_light_10dp,
+            )
+        } else {
+            views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
+            views.setInt(R.id.btn_open_app_bg, "setColorFilter", scheme.surface.toArgb())
+        }
         views.setTextViewText(R.id.widget_title, localized.getString(R.string.widget_label))
         views.setTextColor(R.id.widget_title, scheme.textPrimary.toArgb())
-        views.setInt(R.id.btn_open_app_bg, "setColorFilter", scheme.surface.toArgb())
         views.setTextViewText(R.id.btn_open_app_text, localized.getString(R.string.widget_open_app))
-        views.setTextColor(R.id.btn_open_app_text, scheme.textSecondary.toArgb())
+        views.setTextColor(
+            R.id.btn_open_app_text,
+            if (glassMode) scheme.textPrimary.toArgb() else scheme.textSecondary.toArgb(),
+        )
         views.setOnClickPendingIntent(R.id.btn_open_app, openAppPendingIntent(context))
 
         if (timers.isEmpty()) {
             views.setViewVisibility(R.id.empty_container, View.VISIBLE)
             views.setViewVisibility(R.id.widget_list_view, View.GONE)
-            views.setInt(R.id.empty_bg, "setColorFilter", scheme.surface.toArgb())
+            if (glassMode) {
+                views.setImageViewResource(
+                    R.id.empty_bg,
+                    if (scheme.isDark) R.drawable.widget_glass_card_dark_14dp else R.drawable.widget_glass_card_light_14dp,
+                )
+            } else {
+                views.setInt(R.id.empty_bg, "setColorFilter", scheme.surface.toArgb())
+            }
             views.setTextViewText(R.id.empty_text, localized.getString(R.string.widget_empty_timers))
             views.setTextColor(R.id.empty_text, scheme.textSecondary.toArgb())
             views.setOnClickPendingIntent(R.id.empty_container, openAppPendingIntent(context))
@@ -129,6 +152,7 @@ object TimerWidget {
         appWidgetId: Int,
         timer: TimerEntity,
         scheme: AppColorScheme,
+        glassMode: Boolean,
         nowMillis: Long,
         elapsedNow: Long,
     ): RemoteViews {
@@ -146,11 +170,24 @@ object TimerWidget {
         }
 
         val views = RemoteViews(context.packageName, R.layout.widget_timer_focused)
-        views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
-
-        views.setInt(R.id.btn_back_bg, "setColorFilter", scheme.surface.toArgb())
+        if (glassMode) {
+            views.setImageViewResource(
+                R.id.widget_bg,
+                if (scheme.isDark) R.drawable.widget_glass_dark_20dp else R.drawable.widget_glass_light_20dp,
+            )
+            views.setImageViewResource(
+                R.id.btn_back_bg,
+                if (scheme.isDark) R.drawable.widget_glass_pill_dark_10dp else R.drawable.widget_glass_pill_light_10dp,
+            )
+        } else {
+            views.setInt(R.id.widget_bg, "setColorFilter", scheme.background.toArgb())
+            views.setInt(R.id.btn_back_bg, "setColorFilter", scheme.surface.toArgb())
+        }
         views.setTextViewText(R.id.btn_back_text, localized.getString(R.string.widget_back_to_list))
-        views.setTextColor(R.id.btn_back_text, scheme.textSecondary.toArgb())
+        views.setTextColor(
+            R.id.btn_back_text,
+            if (glassMode) scheme.textPrimary.toArgb() else scheme.textSecondary.toArgb(),
+        )
         views.setOnClickPendingIntent(
             R.id.btn_back,
             widgetActionPendingIntent(
@@ -188,7 +225,14 @@ object TimerWidget {
             )
         }
 
-        views.setInt(R.id.btn_reset_bg, "setColorFilter", scheme.surfaceElevated.toArgb())
+        if (glassMode) {
+            views.setImageViewResource(
+                R.id.btn_reset_bg,
+                if (scheme.isDark) R.drawable.widget_glass_card_dark_14dp else R.drawable.widget_glass_card_light_14dp,
+            )
+        } else {
+            views.setInt(R.id.btn_reset_bg, "setColorFilter", scheme.surfaceElevated.toArgb())
+        }
         views.setTextViewText(R.id.btn_reset_text, localized.getString(R.string.action_reset))
         views.setTextColor(R.id.btn_reset_text, scheme.textPrimary.toArgb())
         views.setOnClickPendingIntent(
@@ -385,12 +429,14 @@ private class TimerWidgetRemoteViewsFactory(
     private data class Snapshot(
         val timers: List<TimerEntity>,
         val scheme: AppColorScheme,
+        val glassMode: Boolean,
     )
 
     @Volatile
     private var snapshot: Snapshot = Snapshot(
         timers = emptyList(),
         scheme = TimerWidget.resolveColorScheme(context),
+        glassMode = ThemePreferences.get(context).settings.value.widgetGlassMode,
     )
 
     override fun onCreate() {
@@ -404,6 +450,7 @@ private class TimerWidgetRemoteViewsFactory(
                 Snapshot(
                     timers = TimerRepository.get(context).getAll(),
                     scheme = TimerWidget.resolveColorScheme(context),
+                    glassMode = ThemePreferences.get(context).settings.value.widgetGlassMode,
                 )
             }
         } finally {
@@ -429,7 +476,14 @@ private class TimerWidgetRemoteViewsFactory(
 
         val localized = AppLocaleManager.localizedContext(context)
         val row = RemoteViews(context.packageName, R.layout.widget_timer_row)
-        row.setInt(R.id.row_bg, "setColorFilter", scheme.surface.toArgb())
+        if (current.glassMode) {
+            row.setImageViewResource(
+                R.id.row_bg,
+                if (scheme.isDark) R.drawable.widget_glass_card_dark_14dp else R.drawable.widget_glass_card_light_14dp,
+            )
+        } else {
+            row.setInt(R.id.row_bg, "setColorFilter", scheme.surface.toArgb())
+        }
         row.setTextViewText(R.id.row_label, timer.label)
         row.setTextColor(R.id.row_label, scheme.textPrimary.toArgb())
 

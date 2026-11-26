@@ -31,6 +31,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,7 +73,9 @@ import java.util.Locale
 internal fun ClockWidgetStyleCard(
     selectedStyle: ClockWidgetStyle,
     use24HourFormat: Boolean,
+    glassMode: Boolean,
     onSelectStyle: (ClockWidgetStyle) -> Unit,
+    onGlassModeChange: (Boolean) -> Unit,
     expandIcon: @Composable (rotationDegrees: Float) -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -138,6 +142,7 @@ internal fun ClockWidgetStyleCard(
                     colors = colors,
                     nowMillis = nowMillis,
                     use24HourFormat = use24HourFormat,
+                    glassMode = glassMode,
                     onClick = {
                         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                         expanded = !expanded
@@ -193,6 +198,51 @@ internal fun ClockWidgetStyleCard(
                 style = AppTypography.label,
                 color = colors.textSecondary,
             )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(colors.outline),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_widget_glass_title),
+                        style = AppTypography.body,
+                        color = colors.textPrimary,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_widget_glass_subtitle),
+                        style = AppTypography.label,
+                        color = colors.textSecondary,
+                    )
+                }
+                Switch(
+                    checked = glassMode,
+                    onCheckedChange = { enabled ->
+                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        onGlassModeChange(enabled)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colors.onAccent,
+                        checkedTrackColor = colors.accent,
+                        uncheckedThumbColor = colors.textSecondary,
+                        uncheckedTrackColor = colors.surfaceElevated,
+                        uncheckedBorderColor = colors.outline,
+                    ),
+                )
+            }
         }
     }
 }
@@ -203,6 +253,7 @@ private fun ClockWidgetLivePreview(
     colors: AppColorScheme,
     nowMillis: Long,
     use24HourFormat: Boolean,
+    glassMode: Boolean,
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -251,13 +302,19 @@ private fun ClockWidgetLivePreview(
         val isMinimal = style == ClockWidgetStyle.MINIMAL_CLEAR
         val cardColor = when {
             isMinimal -> Color.Transparent
+            isAccentHero && glassMode -> colors.accent.copy(alpha = 0.66f)
             isAccentHero -> colors.accent
+            glassMode && colors.isDark -> Color(0x661A1F29)
+            glassMode -> Color(0x78FFFFFF)
             else -> colors.background
         }
-        val cardBorder = if (style == ClockWidgetStyle.TECH_MONO) {
-            BorderStroke(1.5.dp, colors.accent)
-        } else {
-            null
+        val cardBorder = when {
+            style == ClockWidgetStyle.TECH_MONO -> BorderStroke(1.5.dp, colors.accent)
+            glassMode && !isMinimal && !isAccentHero -> BorderStroke(
+                1.dp,
+                if (colors.isDark) Color(0x4DFFFFFF) else Color(0x90FFFFFF),
+            )
+            else -> null
         }
         val cardShape = if (style == ClockWidgetStyle.CAPSULE_SPLIT) {
             RoundedCornerShape(24.dp)

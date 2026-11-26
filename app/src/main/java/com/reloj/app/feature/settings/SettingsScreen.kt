@@ -100,6 +100,7 @@ fun SettingsScreen(
     onAccentChange: (AccentPreset) -> Unit,
     onTimeFormatChange: (Boolean) -> Unit,
     onClockWidgetStyleChange: (ClockWidgetStyle) -> Unit,
+    onWidgetGlassModeChange: (Boolean) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -461,7 +462,9 @@ fun SettingsScreen(
         ClockWidgetStyleCard(
             selectedStyle = appearance.clockWidgetStyle,
             use24HourFormat = appearance.use24HourFormat,
+            glassMode = appearance.widgetGlassMode,
             onSelectStyle = onClockWidgetStyleChange,
+            onGlassModeChange = onWidgetGlassModeChange,
             expandIcon = { rotation ->
                 AccentExpandArrow(
                     rotationDegrees = rotation,

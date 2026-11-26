@@ -145,7 +145,7 @@
 
     <!-- Settings sections -->
     <string name="settings_section_appearance">APPEARANCE</string>
-    <string name="settings_section_clock_widget">CLOCK WIDGET</string>
+    <string name="settings_section_clock_widget">WIDGETS</string>
     <string name="settings_section_app_icon">APP ICON</string>
     <string name="settings_section_sound">SOUND AND ALERTS</string>
     <string name="settings_section_permissions">SYSTEM PERMISSIONS</string>
@@ -164,6 +164,8 @@
 
     <string name="settings_widget_style_title">Widget style</string>
     <string name="settings_widget_style_hint">Tap the preview to choose from the 10 available styles.</string>
+    <string name="settings_widget_glass_title">Glass style</string>
+    <string name="settings_widget_glass_subtitle">Translucent frosted look with luminous border on all widgets</string>
     <string name="settings_icon_style_title">Icon style</string>
     <string name="settings_icon_pending">Icon selected. It will be applied automatically when leaving the app.</string>
     <string name="settings_icon_note">The icon change is applied when leaving the app to avoid closing it.</string>

@@ -145,7 +145,7 @@
 
     <!-- Secciones de Ajustes -->
     <string name="settings_section_appearance">APARIENCIA</string>
-    <string name="settings_section_clock_widget">WIDGET DE RELOJ</string>
+    <string name="settings_section_clock_widget">WIDGETS</string>
     <string name="settings_section_app_icon">ICONO DE LA APLICACIÓN</string>
     <string name="settings_section_sound">SONIDO Y ALERTAS</string>
     <string name="settings_section_permissions">PERMISOS DEL SISTEMA</string>
@@ -164,6 +164,8 @@
 
     <string name="settings_widget_style_title">Estilo del widget</string>
     <string name="settings_widget_style_hint">Toca la vista previa para elegir entre los 10 estilos disponibles.</string>
+    <string name="settings_widget_glass_title">Estilo cristalino</string>
+    <string name="settings_widget_glass_subtitle">Fondo translúcido con borde luminoso en todos los widgets</string>
     <string name="settings_icon_style_title">Estilo del icono</string>
     <string name="settings_icon_pending">Icono seleccionado. Se aplicará automáticamente al salir de la aplicación.</string>
     <string name="settings_icon_note">El cambio de icono se aplica al salir de la aplicación para no cerrarla.</string>

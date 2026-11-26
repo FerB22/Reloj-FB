@@ -99,6 +99,7 @@ object ClockWidget {
             scheme = scheme,
             style = appearance.clockWidgetStyle,
             use24Hour = appearance.use24HourFormat,
+            glassMode = appearance.widgetGlassMode,
             nextAlarm = nextAlarm,
         )
         ids.forEach { appWidgetId ->
@@ -135,6 +136,7 @@ object ClockWidget {
         scheme: AppColorScheme,
         style: ClockWidgetStyle,
         use24Hour: Boolean,
+        glassMode: Boolean,
         nextAlarm: NextAlarmSummary?,
     ): RemoteViews {
         val spec = specFor(style)
@@ -145,8 +147,23 @@ object ClockWidget {
         val accentColor = if (spec.useAccentBackground) scheme.onAccent.toArgb() else scheme.accent.toArgb()
 
         if (spec.hasBackground) {
-            val bgColor = if (spec.useAccentBackground) scheme.accent.toArgb() else scheme.background.toArgb()
-            views.setInt(R.id.clock_widget_bg, "setColorFilter", bgColor)
+            if (glassMode) {
+                if (spec.useAccentBackground) {
+                    views.setInt(R.id.clock_widget_bg, "setColorFilter", scheme.accent.toArgb())
+                    views.setInt(R.id.clock_widget_bg, "setImageAlpha", 170)
+                } else {
+                    val glassRes = when {
+                        style == ClockWidgetStyle.CAPSULE_SPLIT && scheme.isDark -> R.drawable.widget_glass_dark_28dp
+                        style == ClockWidgetStyle.CAPSULE_SPLIT -> R.drawable.widget_glass_light_28dp
+                        scheme.isDark -> R.drawable.widget_glass_dark_20dp
+                        else -> R.drawable.widget_glass_light_20dp
+                    }
+                    views.setImageViewResource(R.id.clock_widget_bg, glassRes)
+                }
+            } else {
+                val bgColor = if (spec.useAccentBackground) scheme.accent.toArgb() else scheme.background.toArgb()
+                views.setInt(R.id.clock_widget_bg, "setColorFilter", bgColor)
+            }
         }
         if (spec.hasBorder) {
             views.setInt(R.id.clock_widget_border, "setColorFilter", scheme.accent.toArgb())
@@ -156,11 +173,24 @@ object ClockWidget {
         }
         if (spec.hasBottomBand) {
             views.setInt(R.id.clock_bottom_band, "setColorFilter", scheme.surface.toArgb())
+            if (glassMode) {
+                views.setInt(R.id.clock_bottom_band, "setImageAlpha", 95)
+            }
         }
         if (spec.hasSplitTiles) {
-            val tileColor = scheme.surfaceElevated.toArgb()
-            views.setInt(R.id.clock_tile_hours_bg, "setColorFilter", tileColor)
-            views.setInt(R.id.clock_tile_minutes_bg, "setColorFilter", tileColor)
+            if (glassMode) {
+                val tileGlass = if (scheme.isDark) {
+                    R.drawable.widget_glass_card_dark_14dp
+                } else {
+                    R.drawable.widget_glass_card_light_14dp
+                }
+                views.setImageViewResource(R.id.clock_tile_hours_bg, tileGlass)
+                views.setImageViewResource(R.id.clock_tile_minutes_bg, tileGlass)
+            } else {
+                val tileColor = scheme.surfaceElevated.toArgb()
+                views.setInt(R.id.clock_tile_hours_bg, "setColorFilter", tileColor)
+                views.setInt(R.id.clock_tile_minutes_bg, "setColorFilter", tileColor)
+            }
         }
 
         if (spec.isSplitTime) {
@@ -200,7 +230,14 @@ object ClockWidget {
         views.setCharSequence(R.id.clock_date, "setFormat24Hour", datePattern)
         views.setTextColor(R.id.clock_date, secondaryTextColor)
         if (spec.hasAlarmPillBg) {
-            views.setInt(R.id.clock_alarm_pill_bg, "setColorFilter", scheme.surface.toArgb())
+            if (glassMode) {
+                views.setImageViewResource(
+                    R.id.clock_alarm_pill_bg,
+                    if (scheme.isDark) R.drawable.widget_glass_pill_dark_10dp else R.drawable.widget_glass_pill_light_10dp,
+                )
+            } else {
+                views.setInt(R.id.clock_alarm_pill_bg, "setColorFilter", scheme.surface.toArgb())
+            }
         }
 
         if (nextAlarm != null) {

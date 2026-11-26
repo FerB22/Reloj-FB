@@ -267,6 +267,13 @@ class MainActivity : ComponentActivity() {
                                             ClockWidget.updateAll(this@MainActivity)
                                         }
                                     },
+                                    onWidgetGlassModeChange = { enabled ->
+                                        themePrefs.setWidgetGlassMode(enabled)
+                                        scope.launch {
+                                            TimerWidget.updateAll(this@MainActivity)
+                                            ClockWidget.updateAll(this@MainActivity)
+                                        }
+                                    },
                                     onLanguageChange = { language ->
                                         selectedLanguage = language
                                         AppLocaleManager.setLanguage(this@MainActivity, language)

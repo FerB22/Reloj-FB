@@ -15,6 +15,7 @@ data class AppearanceSettings(
     val accent: AccentPreset = AccentPreset.AMBER,
     val use24HourFormat: Boolean = true,
     val clockWidgetStyle: ClockWidgetStyle = ClockWidgetStyle.CLASSIC,
+    val widgetGlassMode: Boolean = false,
 )
 
 class ThemePreferences private constructor(context: Context) {
@@ -33,11 +34,13 @@ class ThemePreferences private constructor(context: Context) {
         val clockWidgetStyle = prefs.getString(KEY_CLOCK_WIDGET_STYLE, null)
             ?.let { runCatching { ClockWidgetStyle.valueOf(it) }.getOrNull() }
             ?: ClockWidgetStyle.CLASSIC
+        val widgetGlassMode = prefs.getBoolean(KEY_WIDGET_GLASS_MODE, false)
         return AppearanceSettings(
             themeMode = mode,
             accent = accent,
             use24HourFormat = use24Hour,
             clockWidgetStyle = clockWidgetStyle,
+            widgetGlassMode = widgetGlassMode,
         )
     }
 
@@ -61,6 +64,11 @@ class ThemePreferences private constructor(context: Context) {
         _settings.value = _settings.value.copy(clockWidgetStyle = style)
     }
 
+    fun setWidgetGlassMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_WIDGET_GLASS_MODE, enabled).apply()
+        _settings.value = _settings.value.copy(widgetGlassMode = enabled)
+    }
+
     fun syncSystemNightModeIfNeeded(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         val desiredNightMode = when (_settings.value.themeMode) {
@@ -81,6 +89,7 @@ class ThemePreferences private constructor(context: Context) {
         private const val KEY_ACCENT = "accent_preset"
         private const val KEY_USE_24H = "use_24h_format"
         private const val KEY_CLOCK_WIDGET_STYLE = "clock_widget_style"
+        private const val KEY_WIDGET_GLASS_MODE = "widget_glass_mode"
         private const val KEY_SYNCED_NIGHT_MODE = "synced_os_night_mode"
 
         @Volatile private var instance: ThemePreferences? = null
